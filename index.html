@@ -550,7 +550,7 @@ let lightningTimer=0;
 function loop(){
   if (!gameRunning || !boatGroup) return;
   requestAnimationFrame(loop);
-  renderer.render(scene, camera);
+  
   const dt=clock.getDelta();
   const t=clock.getElapsedTime();
 
@@ -568,7 +568,7 @@ function loop(){
   pos.needsUpdate=true;
   waterGeo.computeVertexNormals();
 
-  // ── Nuvens ──
+  // ── Nuvens e Ondas Decorativas ──
   stormClouds.forEach(c=>{
     if(c.type==='cloud'){
       c.mesh.position.x+=c.mesh.userData.speed*dt*1.5;
@@ -588,23 +588,28 @@ function loop(){
   }
 
   // ── Movimento do barco ──
-  const maxSpd=18,acc=10,fric=4.5,turn=1.5;
-  if(keys.up)   boatSpeed=Math.min(boatSpeed+acc*dt,maxSpd);
-  if(keys.down) boatSpeed=Math.max(boatSpeed-acc*dt*1.6,-maxSpd*.35);
-  if(!keys.up&&!keys.down) boatSpeed+=(0-boatSpeed)*fric*dt;
-  if(keys.left) boatAngle+=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
-  if(keys.right)boatAngle-=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
+  const maxSpd=18, acc=10, fric=4.5, turn=1.5;
+  if(keys.up)    boatSpeed=Math.min(boatSpeed+acc*dt,maxSpd);
+  if(keys.down)  boatSpeed=Math.max(boatSpeed-acc*dt*1.6,-maxSpd*.35);
+  if(!keys.up && !keys.down) boatSpeed+=(0-boatSpeed)*fric*dt;
+  
+  // O ângulo só muda aqui:
+  if(keys.left)  boatAngle+=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
+  if(keys.right) boatAngle-=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
 
   const dx=Math.sin(boatAngle)*boatSpeed*dt;
   const dz=Math.cos(boatAngle)*boatSpeed*dt;
   boatGroup.position.x+=dx;
   boatGroup.position.z+=dz;
 
-  // Bob & roll
+  // ── ROTAÇÃO CORRIGIDA ──
+  // Aqui está o segredo: boatAngle (sua direção) + correção de 90 graus (Math.PI/2)
+  boatGroup.rotation.y = boatAngle + (Math.PI / 2);
+
+  // Bob & roll (Balanço visual)
   boatGroup.position.y = Math.sin(t * 1.1) * 0.28;
-  boatGroup.rotation.z=Math.sin(t*.9)*.032+(keys.left?.055:keys.right?-.055:0);
-  boatGroup.rotation.x=Math.sin(t*.65)*.022+(boatSpeed/maxSpd)*.04;
-  boatGroup.rotation.y= Math.PI / 2;
+  boatGroup.rotation.z = Math.sin(t*.9)*.032 + (keys.left ? .055 : keys.right ? -.055 : 0);
+  boatGroup.rotation.x = Math.sin(t*.65)*.022 + (boatSpeed/maxSpd)*.04;
 
   // Animação dos remos
   oarGroups.forEach(og=>{
@@ -614,20 +619,20 @@ function loop(){
   // Vela balança levemente
   if(sailMesh) sailMesh.rotation.y=Math.sin(t*.6)*.04;
 
-  // ── Wake ──
-  if(Math.abs(boatSpeed)>1&&Math.random()<.4){
-    spawnWake(boatGroup.position.x-dx*4,boatGroup.position.z-dz*4);
+  // ── Wake (Rastro na água) ──
+  if(Math.abs(boatSpeed)>1 && Math.random()<.4){
+    spawnWake(boatGroup.position.x-dx*4, boatGroup.position.z-dz*4);
   }
-  for(let i=wakes.length-1;i>=0;i--){
+  for(let i=wakes.length-1; i>=0; i--){
     const w=wakes[i];
     w.userData.life-=dt*.7;
     w.material.opacity=w.userData.life*.3;
     w.scale.setScalar(1+(1-w.userData.life)*4);
-    if(w.userData.life<=0){scene.remove(w);wakes.splice(i,1);}
+    if(w.userData.life<=0){scene.remove(w); wakes.splice(i,1);}
   }
 
-  // ── Câmera isométrica segue barco ──
-  const cx=boatGroup.position.x,cz=boatGroup.position.z;
+  // ── Câmera Segue o Barco ──
+  const cx=boatGroup.position.x, cz=boatGroup.position.z;
   camera.position.x+=(cx+50-camera.position.x)*6*dt;
   camera.position.y+=(50-camera.position.y)*4*dt;
   camera.position.z+=(cz+50-camera.position.z)*6*dt;
@@ -640,7 +645,7 @@ function loop(){
   const spdPct=Math.abs(boatSpeed)/maxSpd*100;
   document.getElementById('sf').style.width=spdPct+'%';
 
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
 
 // ---
@@ -670,10 +675,9 @@ window.addEventListener('keyup',e=>{
 
 function onResize(){
   const a=window.innerWidth/window.innerHeight;
-  const d=50;
+  const d=100;
   camera.left=-d*a;camera.right=d*a;
   camera.top=d;camera.bottom=-d;
-  camera.zoom = 1.0;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
 }
