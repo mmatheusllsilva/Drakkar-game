@@ -317,33 +317,26 @@ setTimeout(advance,200);
 // ---
 let scene,camera,renderer,clock;
 let waterMesh,waterGeo;
-let boatGroup,sailMesh,oarGroups=[];
+let boatGroup,sailMesh;
 let wakes=[];
-let lightningMeshes=[];
 let stormClouds=[];
 let boatSpeed=0, boatAngle=Math.PI;
 let gameRunning=false;
 const keys={left:false,right:false,up:false,down:false};
 
-// ── INIT ──
 function initThree(){
   const canvas=document.getElementById('c');
   renderer=new THREE.WebGLRenderer({canvas,antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(window.innerWidth,window.innerHeight);
   renderer.shadowMap.enabled=true;
-  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.2;
 
   scene=new THREE.Scene();
-  // Céu cinza tempestuoso
-  scene.background=new THREE.Color(0x6a8aaa);
-  scene.fog=null;
+  scene.background=new THREE.Color(0x2a3a4a); // Céu mais escuro
 
   clock=new THREE.Clock();
 
-  // Câmera isométrica
   const aspect=window.innerWidth/window.innerHeight;
   const d=30;
   camera=new THREE.OrthographicCamera(-d*aspect,d*aspect,d,-d,0.1,1000);
@@ -353,7 +346,6 @@ function initThree(){
   camera.updateProjectionMatrix();
 
   buildLights();
-  buildSky();
   buildWater();
   mkBoat();
   buildClouds();
@@ -362,238 +354,131 @@ function initThree(){
 }
 
 function buildLights(){
-  // Luz ambiente forte para tirar o "breu"
-  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-
-  // Luz direcional (O Sol)
-  const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
   sunLight.position.set(10, 20, 10);
-  sunLight.castShadow = true;
   scene.add(sunLight);
-
-  // Luz pontual focada no barco para dar brilho na madeira
-  const pointLight = new THREE.PointLight(0xffffff, 2, 50);
-  pointLight.position.set(0, 5, 0);
-  scene.add(pointLight);
-}
-
-function buildSky(){
-  // Gradiente de céu em dome
-  const skyGeo=new THREE.SphereGeometry(400,24,12);
-  const skyMat=new THREE.ShaderMaterial({
-    side:THREE.BackSide,
-    uniforms:{
-      topColor:{value:new THREE.Color(0x5580aa)},
-      bottomColor:{value:new THREE.Color(0xaabbc8)},
-      offset:{value:20},
-      exponent:{value:0.4},
-    },
-    vertexShader:`
-      varying vec3 vWorldPos;
-      void main(){vWorldPos=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
-    `,
-    fragmentShader:`
-      uniform vec3 topColor,bottomColor;uniform float offset,exponent;
-      varying vec3 vWorldPos;
-      void main(){float h=normalize(vWorldPos+offset).y;gl_FragColor=vec4(mix(bottomColor,topColor,max(pow(max(h,0.0),exponent),0.0)),1.0);}
-    `,
-  });
-  scene.add(new THREE.Mesh(skyGeo,skyMat));
 }
 
 function buildWater(){
-  waterGeo=new THREE.PlaneGeometry(600,600,140,140);
+  waterGeo=new THREE.PlaneGeometry(600,600,120,120);
   const waterMat=new THREE.MeshStandardMaterial({
-    color:0x4a7a9b,
-    roughness:0.08,
-    metalness:0.85,
-    envMapIntensity:1.2,
+    color:0x1a3a5a,
+    roughness:0.1,
+    metalness:0.5,
   });
   waterMesh=new THREE.Mesh(waterGeo,waterMat);
   waterMesh.rotation.x=-Math.PI/2;
-  waterMesh.receiveShadow=true;
   scene.add(waterMesh);
-
-  // Cristas de ondas — linhas brancas
-  for(let i=0;i<18;i++){
-    const w=new THREE.PlaneGeometry(8+Math.random()*20,0.6);
-    const wm=new THREE.MeshBasicMaterial({color:0xaabbcc,transparent:true,opacity:.18+Math.random()*.12});
-    const wv=new THREE.Mesh(w,wm);
-    wv.rotation.x=-Math.PI/2;
-    wv.rotation.z=Math.random()*Math.PI;
-    wv.position.set((Math.random()-.5)*400,(Math.random()-.5)*400,0.12);
-    // usar position em espaço do plano — rotacionado
-    wv.position.set((Math.random()-.5)*400,.15,(Math.random()-.5)*400);
-    wv.userData={speed:0.3+Math.random()*.4,phase:Math.random()*Math.PI*2};
-    scene.add(wv);
-    stormClouds.push({mesh:wv,type:'wave'});
-  }
 }
 
-// ── LOWPOLY BOAT ──
 function mkBoat(){
   boatGroup = new THREE.Group();
   
   function mat(c,ds){return new THREE.MeshStandardMaterial({color:c,roughness:1,metalness:0,flatShading:true,side:ds?THREE.DoubleSide:THREE.FrontSide});}
   function add(parent,geo,m,x,y,z){const mesh=new THREE.Mesh(geo,m);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;}
   
-  const brown  = mat(0x7a3a18);
-  const dkBrown= mat(0x4a200a);
-  const red    = mat(0xb02818);
-  const redSail= mat(0xaa2018,true);
-  const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2,flatShading:true});
+  const dkBrown= mat(0x3d1f10); // Marrom madeira escura
+  const deepRed= mat(0x8b0000); // Vermelho escuro
+  const sailRed= mat(0xaa2018, true);
+  const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00});
   
-  // Hull - Agora passando parâmetros para o novo comprimento (12.0)
-  const hull = mkHull(brown, 12.0, 2.5, 1.8, 0.55);
+  // Casco - Mais alto para não inundar
+  const hull = mkHull(dkBrown, 8, 2.5, 1.8, 0.6);
   boatGroup.add(hull);
   
-  // Deck - Aumentado para 22.0 de comprimento para cobrir o casco longo
-  add(boatGroup, new THREE.BoxGeometry(22.0, 0.45, 3.8), red, 0, 1.6, 0);
+  // Deck
+  add(boatGroup, new THREE.BoxGeometry(15, 0.5, 4), deepRed, 0, 1.8, 0);
   
   // Mastro
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.18,10,6), dkBrown);
-  mast.position.set(0, 6.0, 0);
-  boatGroup.add(mast);
+  add(boatGroup, new THREE.CylinderGeometry(0.15,0.2,12,6), dkBrown, 0, 6, 0);
 
-  // Vela
-  const sail = new THREE.Mesh(new THREE.PlaneGeometry(6, 8), redSail);
-  sail.position.set(0, 7, 0.1);
+  // Vela - Rotacionada para lógica real (perpendicular ao barco)
+  const sail = new THREE.Mesh(new THREE.PlaneGeometry(8, 9), sailRed);
+  sail.position.set(0, 7.5, 0);
+  sail.rotation.y = 0; // Alinhada com a largura do barco
   boatGroup.add(sail);
   sailMesh = sail;
 
-  // ── CABEÇA DE DRAGÃO (PROA) - Reposicionada para a nova frente (12.5) ──
-  const neck = add(boatGroup, new THREE.BoxGeometry(0.6, 2.8, 0.6), red, 11.5, 2.0, 0);
-  neck.rotation.z = -0.35;
+  // ── CABEÇA DE DRAGÃO (FRENTE) ──
+  const neck = add(boatGroup, new THREE.BoxGeometry(0.6, 3, 0.6), dkBrown, 7.5, 2.5, 0);
+  neck.rotation.z = -0.4;
+  const head = add(boatGroup, new THREE.BoxGeometry(1.8, 1, 1), dkBrown, 8.5, 4, 0);
+  add(boatGroup, new THREE.BoxGeometry(0.3, 0.3, 0.2), eyeM, 9, 4.2, 0.4); // Olho
   
-  const head = add(boatGroup, new THREE.BoxGeometry(1.6, 0.9, 0.9), red, 12.5, 3.3, 0);
-  head.rotation.z = -0.2;
-  
-  add(boatGroup, new THREE.BoxGeometry(1.2, 0.5, 0.6), red, 13.5, 3.0, 0); // Focinho
-  add(boatGroup, new THREE.BoxGeometry(0.25, 0.25, 0.1), eyeM, 13.05, 3.4, 0.4); // Olho
-  
-  // ── CAUDA (POPA) - Reposicionada para o novo fundo (-11.5) ──
-  const tail = add(boatGroup, new THREE.BoxGeometry(0.6, 2.2, 0.6), red, -11.5, 2.1, 0);
-  tail.rotation.z = 0.35;
+  // ── CAUDA (TRASEIRA) ──
+  const tail = add(boatGroup, new THREE.BoxGeometry(0.6, 2.5, 0.6), dkBrown, -7.5, 2.5, 0);
+  tail.rotation.z = 0.4;
 
-  boatGroup.position.set(0, 1.4, 0);
+  // Posição Y inicial mais alta (2.2) para evitar que ondas entrem
+  boatGroup.position.set(0, 2.2, 0);
   scene.add(boatGroup);
 }
 
-// ── HULL (CASCO) DINÂMICO ──
-function mkHull(mat, lx = 4.8, bz = 2.1, th = 1.2, taper = 0.55){
+function mkHull(mat, lx, bz, th, taper){
   const geo = new THREE.BufferGeometry();
-  // lx agora é dinâmico, permitindo o barco ser longo
   const vertices = new Float32Array([
     -lx, th,-bz,  lx, th,-bz,  lx, th, bz,  -lx, th, bz,
     -lx+taper,-th,-bz+taper,  lx-taper,-th,-bz+taper,  lx-taper,-th, bz-taper,  -lx+taper,-th, bz-taper,
   ]);
-  const indices = [
-    0,2,1, 0,3,2, 4,5,6, 4,6,7, 0,1,5, 0,5,4, 2,3,7, 2,7,6, 0,4,7, 0,7,3, 1,2,6, 1,6,5
-  ];
+  const indices = [0,2,1, 0,3,2, 4,5,6, 4,6,7, 0,1,5, 0,5,4, 2,3,7, 2,7,6, 0,4,7, 0,7,3, 1,2,6, 1,6,5];
   geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return new THREE.Mesh(geo, mat);
 }
+
 function buildClouds(){
-  // Nuvens de tempestade escuras
-  for(let i=0;i<16;i++){
+  // Dobrado a quantidade para mais nevoeiro (32 nuvens)
+  for(let i=0;i<32;i++){
     const grp=new THREE.Group();
-    const n=3+Math.floor(Math.random()*4);
+    const n=4+Math.floor(Math.random()*5);
     for(let j=0;j<n;j++){
-      const r=6+Math.random()*8;
-      const geo=new THREE.SphereGeometry(r,8,6);
+      const r=8+Math.random()*12;
       const mat=new THREE.MeshStandardMaterial({
-        color:new THREE.Color().setHSL(0,.0,.65+Math.random()*.2),
-        roughness:1,transparent:true,opacity:.55+Math.random()*.2,
+        color:0x8899aa,
+        transparent:true,
+        opacity:0.4,
       });
-      const m=new THREE.Mesh(geo,mat);
-      m.scale.y=.35+Math.random()*.2;
-      m.position.set((Math.random()-.5)*18,(Math.random()-.5)*4,(Math.random()-.5)*12);
+      const m=new THREE.Mesh(new THREE.SphereGeometry(r,8,6),mat);
+      m.scale.y=0.2;
+      m.position.set((Math.random()-.5)*25, (Math.random()-.5)*5, (Math.random()-.5)*25);
       grp.add(m);
     }
-    grp.position.set((Math.random()-.5)*300,55+Math.random()*30,(Math.random()-.5)*300);
-    grp.userData={speed:0.5+Math.random()*.5,drift:(Math.random()-.5)*.002};
+    grp.position.set((Math.random()-.5)*500, 10+Math.random()*40, (Math.random()-.5)*500);
+    grp.userData={speed:0.2+Math.random()*0.3};
     scene.add(grp);
-    stormClouds.push({mesh:grp,type:'cloud'});
+    stormClouds.push({mesh:grp, type:'cloud'});
   }
 }
-
-// ── WAKE ──
-const wakeMat=new THREE.MeshBasicMaterial({color:0x8899aa,transparent:true,opacity:.3,side:THREE.DoubleSide});
-function spawnWake(x,z){
-  const geo=new THREE.PlaneGeometry(.8,.8);
-  const m=new THREE.Mesh(geo,wakeMat.clone());
-  m.rotation.x=-Math.PI/2;
-  m.position.set(x+(Math.random()-.5)*2,.12,z+(Math.random()-.5)*2);
-  m.userData.life=1;
-  scene.add(m);wakes.push(m);
-}
-
-// ── LIGHTNING (relâmpago 3D) ──
-function triggerLightning(){
-  const fl=document.getElementById('flash');
-  fl.style.opacity='.18';
-  setTimeout(()=>fl.style.opacity='0',80);
-  // Ponto de luz rápido
-  const l=new THREE.PointLight(0xaabbff,20,200);
-  l.position.set((Math.random()-.5)*200,80,(Math.random()-.5)*200);
-  scene.add(l);
-  setTimeout(()=>scene.remove(l),120);
-}
-
-// ---
-// GAME LOOP
-// ---
-let lightningTimer=0;
 
 function loop(){
   if (!gameRunning || !boatGroup) return;
   requestAnimationFrame(loop);
-  
   const dt=clock.getDelta();
   const t=clock.getElapsedTime();
 
-  // ── Água (ondas) ──
+  // Ondas
   const pos=waterGeo.attributes.position;
   for(let i=0;i<pos.count;i++){
     const x=pos.getX(i),y=pos.getY(i);
-    const h=
-      Math.sin(x*.08+t*.9)*1.1+
-      Math.sin(y*.06+t*.7)*0.9+
-      Math.sin((x+y)*.05+t*1.2)*0.6+
-      Math.sin(x*.15+t*1.5)*.35;
+    const h=Math.sin(x*.08+t*.9)*1.1+Math.sin(y*.06+t*.7)*0.9;
     pos.setZ(i,h);
   }
   pos.needsUpdate=true;
-  waterGeo.computeVertexNormals();
 
-  // ── Nuvens e Ondas Decorativas ──
+  // Nuvens
   stormClouds.forEach(c=>{
-    if(c.type==='cloud'){
-      c.mesh.position.x+=c.mesh.userData.speed*dt*1.5;
-      if(c.mesh.position.x>300)c.mesh.position.x=-300;
-    }
-    if(c.type==='wave'){
-      c.mesh.position.x+=.4*dt;
-      if(c.mesh.position.x>300)c.mesh.position.x=-300;
-    }
+    c.mesh.position.x+=c.mesh.userData.speed;
+    if(c.mesh.position.x>300) c.mesh.position.x=-300;
   });
 
-  // ── Relâmpago aleatório ──
-  lightningTimer-=dt;
-  if(lightningTimer<=0){
-    triggerLightning();
-    lightningTimer=4+Math.random()*8;
-  }
-
-  // ── Movimento do barco ──
+  // Movimento
   const maxSpd=18, acc=10, fric=4.5, turn=1.5;
   if(keys.up)    boatSpeed=Math.min(boatSpeed+acc*dt,maxSpd);
   if(keys.down)  boatSpeed=Math.max(boatSpeed-acc*dt*1.6,-maxSpd*.35);
   if(!keys.up && !keys.down) boatSpeed+=(0-boatSpeed)*fric*dt;
   
-  // O ângulo só muda aqui:
   if(keys.left)  boatAngle+=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
   if(keys.right) boatAngle-=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
 
@@ -602,103 +487,24 @@ function loop(){
   boatGroup.position.x+=dx;
   boatGroup.position.z+=dz;
 
-  // ── ROTAÇÃO CORRIGIDA ──
-  // Aqui está o segredo: boatAngle (sua direção) + correção de 90 graus (Math.PI/2)
-  boatGroup.rotation.y = boatAngle + (Math.PI / 2);
+  // Rotaciona o barco para olhar para onde anda (Ajustado para o Dragão ser a frente)
+  boatGroup.rotation.y = boatAngle;
 
-  // Bob & roll (Balanço visual)
-  boatGroup.position.y = Math.sin(t * 1.1) * 0.28;
-  boatGroup.rotation.z = Math.sin(t*.9)*.032 + (keys.left ? .055 : keys.right ? -.055 : 0);
-  boatGroup.rotation.x = Math.sin(t*.65)*.022 + (boatSpeed/maxSpd)*.04;
+  // Balanço (Base Y em 2.2 para ficar acima das ondas)
+  boatGroup.position.y = 2.2 + Math.sin(t * 1.1) * 0.28;
+  boatGroup.rotation.z = Math.sin(t*.9)*.03 + (keys.left?.05:keys.right?-.05:0);
 
-  // Animação dos remos
-  oarGroups.forEach(og=>{
-    og.rotation.x=Math.sin(t*2.2+og.userData.phase)*0.35*(boatSpeed/maxSpd+.3)*og.userData.side;
-  });
+  // Vela balançando
+  if(sailMesh) sailMesh.rotation.x = Math.sin(t*1.5)*0.05;
 
-  // Vela balança levemente
-  if(sailMesh) sailMesh.rotation.y=Math.sin(t*.6)*.04;
-
-  // ── Wake (Rastro na água) ──
-  if(Math.abs(boatSpeed)>1 && Math.random()<.4){
-    spawnWake(boatGroup.position.x-dx*4, boatGroup.position.z-dz*4);
-  }
-  for(let i=wakes.length-1; i>=0; i--){
-    const w=wakes[i];
-    w.userData.life-=dt*.7;
-    w.material.opacity=w.userData.life*.3;
-    w.scale.setScalar(1+(1-w.userData.life)*4);
-    if(w.userData.life<=0){scene.remove(w); wakes.splice(i,1);}
-  }
-
-  // ── Câmera Segue o Barco ──
+  // Câmera
   const cx=boatGroup.position.x, cz=boatGroup.position.z;
-  camera.position.x+=(cx+50-camera.position.x)*6*dt;
-  camera.position.y+=(50-camera.position.y)*4*dt;
-  camera.position.z+=(cz+50-camera.position.z)*6*dt;
-  camera.lookAt(cx,boatGroup.position.y,cz);
-
-  // HUD
-  const lat=(63+boatGroup.position.z*.002).toFixed(3);
-  const lon=(17+boatGroup.position.x*.003).toFixed(3);
-  document.getElementById('coord').textContent=`${lat}°N · ${lon}°W`;
-  const spdPct=Math.abs(boatSpeed)/maxSpd*100;
-  document.getElementById('sf').style.width=spdPct+'%';
+  camera.position.x+=(cx+60-camera.position.x)*3*dt;
+  camera.position.z+=(cz+60-camera.position.z)*3*dt;
+  camera.lookAt(cx, 0, cz);
 
   renderer.render(scene, camera);
 }
-
-// ---
-// INPUT
-// ---
-window.addEventListener('keydown',e=>{
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A')keys.left=true;
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;
-  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W')keys.up=true;
-  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S')keys.down=true;
-});
-window.addEventListener('keyup',e=>{
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A')keys.left=false;
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false;
-  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W')keys.up=false;
-  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S')keys.down=false;
-});
-
-['ml','mr','mu','md'].forEach(id=>{
-  const el=document.getElementById(id);
-  const k=id[1]==='l'?'left':id[1]==='r'?'right':id[1]==='u'?'up':'down';
-  el.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});
-  el.addEventListener('touchend',  e=>{e.preventDefault();keys[k]=false},{passive:false});
-  el.addEventListener('mousedown', ()=>keys[k]=true);
-  el.addEventListener('mouseup',   ()=>keys[k]=false);
-});
-
-function onResize(){
-  const a=window.innerWidth/window.innerHeight;
-  const d=100;
-  camera.left=-d*a;camera.right=d*a;
-  camera.top=d;camera.bottom=-d;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-}
-
-// ---
-// START
-// ---
-function startGame(){
-  document.getElementById('ls').classList.add('out');
-  document.getElementById('hud').classList.add('on');
-  document.getElementById('speedbar').classList.add('on');
-  document.getElementById('ctrl').classList.add('on');
-  if(window.innerWidth<=700){
-    document.getElementById('mctrl').style.display='flex';
-    document.getElementById('ctrl').style.display='none';
-  }
-  setTimeout(()=>{gameRunning=true;loop();},600);
-}
-
-initThree();
-renderer.render(scene,camera);
 </script>
 </body>
 </html>
