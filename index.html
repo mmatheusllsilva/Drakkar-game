@@ -43,6 +43,17 @@ canvas#c{display:block;width:100vw;height:100vh}
 .spd-track{width:90px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
 .spd-fill{height:100%;width:0%;background:linear-gradient(90deg,#334,#aac);transition:width .15s linear}
 
+/* mute button */
+#muteBtn{
+  position:fixed;bottom:80px;left:32px;z-index:10;opacity:0;transition:opacity 1.2s;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(180,200,255,0.25);
+  color:rgba(180,200,255,0.55);font-family:'Cinzel',serif;font-size:.55rem;
+  letter-spacing:.25em;text-transform:uppercase;padding:8px 14px;cursor:pointer;
+  pointer-events:none;transition:background .3s, opacity 1.2s;
+}
+#muteBtn.on{opacity:1;pointer-events:all}
+#muteBtn:hover{background:rgba(180,200,255,.1);color:#fff}
+
 #ctrl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;opacity:0;transition:opacity 1.2s;z-index:10;pointer-events:none;}
 #ctrl.on{opacity:1;pointer-events:all}
 .key{display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -99,6 +110,7 @@ canvas#c{display:block;width:100vw;height:100vh}
   <div class="hud-right">AUTOMAÇÃO · IA · N8N<br><span style="color:rgba(180,200,255,.3)">NAVEGANDO</span></div>
 </div>
 <div id="speedbar"><div class="spd-label">VELOCIDADE</div><div class="spd-track"><div class="spd-fill" id="sf"></div></div></div>
+<button id="muteBtn" onclick="toggleMute()">♪ SOM</button>
 <div id="ctrl">
   <div class="key"><div class="key-k">←</div><div class="key-l">Esq</div></div>
   <div class="key"><div class="key-k">↑</div><div class="key-l">Frente</div></div>
@@ -142,25 +154,99 @@ function advance(){
 }
 setTimeout(advance,200);
 
-// ── ENGINE ──
+// ── AUDIO SYSTEM ──
+// Volumes:
+//   MENU:   music=0.55  storm=0.08  (música em destaque, tempestade suave de fundo)
+//   GAME:   music=0.28  storm=0.30  (tempestade cresce, música recua)
+const VOL = {
+  menu:  { music: 0.55, storm: 0.08 },
+  game:  { music: 0.28, storm: 0.30 },
+};
+
+let audioCtx = null;
+let musicSrc = null, stormSrc = null;
+let musicGain = null, stormGain = null;
+let masterGain = null;
+let audioReady = false;
+let muted = false;
+let audioState = 'menu'; // 'menu' | 'game'
+
+function initAudio(){
+  if(audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 1.0;
+    masterGain.connect(audioCtx.destination);
+
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = VOL.menu.music;
+    musicGain.connect(masterGain);
+
+    stormGain = audioCtx.createGain();
+    stormGain.gain.value = VOL.menu.storm;
+    stormGain.connect(masterGain);
+
+    // Load and start both tracks
+    loadTrack('music.mp3', musicGain, node => { musicSrc = node; });
+    loadTrack('storm.mp3', stormGain, node => { stormSrc = node; });
+
+    audioReady = true;
+  } catch(e) {
+    console.warn('Audio init failed:', e);
+  }
+}
+
+function loadTrack(url, gainNode, cb){
+  fetch(url)
+    .then(r => r.arrayBuffer())
+    .then(buf => audioCtx.decodeAudioData(buf))
+    .then(decoded => {
+      const src = audioCtx.createBufferSource();
+      src.buffer = decoded;
+      src.loop = true;
+      src.connect(gainNode);
+      src.start(0);
+      cb(src);
+    })
+    .catch(e => console.warn('Audio load failed for', url, e));
+}
+
+function setAudioState(state){
+  if(!audioReady || !audioCtx) return;
+  audioState = state;
+  const v = VOL[state];
+  const t = audioCtx.currentTime;
+  // Smooth crossfade over 2.5 seconds
+  if(musicGain) musicGain.gain.linearRampToValueAtTime(muted ? 0 : v.music, t + 2.5);
+  if(stormGain) stormGain.gain.linearRampToValueAtTime(muted ? 0 : v.storm, t + 2.5);
+}
+
+function toggleMute(){
+  muted = !muted;
+  const btn = document.getElementById('muteBtn');
+  if(!audioReady) return;
+  const t = audioCtx.currentTime;
+  masterGain.gain.linearRampToValueAtTime(muted ? 0 : 1.0, t + 0.3);
+  btn.textContent = muted ? '♪ MUDO' : '♪ SOM';
+  btn.style.color = muted ? 'rgba(255,100,100,0.6)' : 'rgba(180,200,255,0.55)';
+}
+
+// ── THREE.JS ENGINE ──
 let scene,camera,renderer,clock;
 let waterGeo,waterMesh;
 let boatGroup,sailMesh,oarGroups=[];
 let wakes=[],clouds=[];
 let ltTimer=0;
-// boatAngle=0 means bow points toward +X
-// camera offset is diagonal, so starting angle looks good
 let boatSpeed=0, boatAngle=0;
 let running=false;
 const K={l:false,r:false,u:false,d:false};
 
-// WAVE amplitude kept small so boat always floats on top
 const WAVE_AMP = 0.9;
-// Boat hull bottom in local space ≈ -1.5, so base world Y = WAVE_AMP+1.5+margin
 const BOAT_BASE_Y = WAVE_AMP + 1.8;
-
-// Camera: far isometric
+// Slightly closer zoom than before
 const CAM_D = 90;
+const CAM_ZOOM = 0.95; // was 0.75, now a bit closer
 
 function init(){
   const cv=document.getElementById('c');
@@ -179,17 +265,12 @@ function init(){
 
   const a=innerWidth/innerHeight;
   camera=new THREE.OrthographicCamera(-CAM_D*a,CAM_D*a,CAM_D,-CAM_D,0.1,2000);
-  // isometric angle: camera sits at 45° diagonal, looking down at ~35°
   camera.position.set(CAM_D,CAM_D*0.6,CAM_D);
   camera.lookAt(0,0,0);
-  camera.zoom=0.75;
+  camera.zoom=CAM_ZOOM;
   camera.updateProjectionMatrix();
 
-  mkLights();
-  mkSky();
-  mkWater();
-  mkBoat();
-  mkClouds();
+  mkLights(); mkSky(); mkWater(); mkBoat(); mkClouds();
   window.addEventListener('resize',onResize);
 }
 
@@ -222,165 +303,87 @@ function mkSky(){
 }
 
 function mkWater(){
-  // High-res geometry for visible wave detail
   waterGeo=new THREE.PlaneGeometry(900,900,160,160);
-  const mat=new THREE.MeshStandardMaterial({
-    color:0x1e4f6e,
-    roughness:0.08,
-    metalness:0.8,
-  });
+  const mat=new THREE.MeshStandardMaterial({color:0x1e4f6e,roughness:0.08,metalness:0.8});
   waterMesh=new THREE.Mesh(waterGeo,mat);
   waterMesh.rotation.x=-Math.PI/2;
   waterMesh.position.y=0;
   waterMesh.receiveShadow=true;
   scene.add(waterMesh);
-
-  // Foam crests — visible white lines on water surface
   for(let i=0;i<30;i++){
     const w=new THREE.PlaneGeometry(10+Math.random()*25,0.5+Math.random()*0.4);
     const wm=new THREE.MeshBasicMaterial({color:0xddeeff,transparent:true,opacity:.22+Math.random()*.18});
     const wv=new THREE.Mesh(w,wm);
-    wv.rotation.x=-Math.PI/2;
-    wv.rotation.z=Math.random()*Math.PI;
+    wv.rotation.x=-Math.PI/2;wv.rotation.z=Math.random()*Math.PI;
     wv.position.set((Math.random()-.5)*600,0.2,(Math.random()-.5)*600);
     wv.userData={spd:0.4+Math.random()*.6};
-    scene.add(wv);
-    clouds.push({mesh:wv,type:'foam'});
+    scene.add(wv);clouds.push({mesh:wv,type:'foam'});
   }
 }
 
-// ── WAVE HEIGHT FUNCTION (same formula used in loop & for boat Y) ──
 function waveH(x,z,t){
-  return (
-    Math.sin(x*0.10+t*1.0)*WAVE_AMP*0.55 +
-    Math.sin(z*0.08+t*0.75)*WAVE_AMP*0.50 +
-    Math.sin((x+z)*0.06+t*1.3)*WAVE_AMP*0.30 +
-    Math.sin(x*0.18+t*1.7)*WAVE_AMP*0.18 +
+  return(
+    Math.sin(x*0.10+t*1.0)*WAVE_AMP*0.55+
+    Math.sin(z*0.08+t*0.75)*WAVE_AMP*0.50+
+    Math.sin((x+z)*0.06+t*1.3)*WAVE_AMP*0.30+
+    Math.sin(x*0.18+t*1.7)*WAVE_AMP*0.18+
     Math.cos(z*0.14+t*0.9)*WAVE_AMP*0.15
   );
 }
 
-// ── LOWPOLY BOAT ──
-// Boat local coords:
-//   +X = BOW (dragon head) — this is the FORWARD direction
-//   -X = STERN (tail)
-//   +Y = up
-//   mastro vertical along Y, centered at (0,Y,0)
 function mkBoat(){
   boatGroup=new THREE.Group();
+  function M(c,ds){return new THREE.MeshStandardMaterial({color:c,roughness:0.95,metalness:0.0,flatShading:true,side:ds?THREE.DoubleSide:THREE.FrontSide});}
+  const hullBrown=M(0x5a2e0c),dkBrown=M(0x3a1a06),wineRed=M(0x6e1010);
+  const sailWine=M(0x701515,true),sailCream=M(0xd8d0b8,true);
+  const shCream=M(0xddd5b8),shRed=M(0x6e1010),shBlue=M(0x142066);
+  const eyeGlow=new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2.5,flatShading:true});
 
-  function M(c,ds){
-    return new THREE.MeshStandardMaterial({
-      color:c,roughness:0.95,metalness:0.0,flatShading:true,
-      side:ds?THREE.DoubleSide:THREE.FrontSide
-    });
-  }
-
-  // COLORS — brown hull, dark wine red accents
-  const hullBrown = M(0x5a2e0c);   // dark brown hull
-  const dkBrown   = M(0x3a1a06);   // very dark brown
-  const wineRed   = M(0x6e1010);   // dark wine red for deck/accents
-  const sailWine  = M(0x701515,true); // wine sail
-  const sailCream = M(0xd8d0b8,true); // cream sail panel
-  const shCream   = M(0xddd5b8);   // shield face
-  const shRed     = M(0x6e1010);   // shield cross red
-  const shBlue    = M(0x142066);   // shield cross blue
-  const eyeGlow   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2.5,flatShading:true});
-
-  // ── HULL — custom trapezoid, bow along +X ──
-  const lx=5.5, bz=2.2, th=1.4, tp=0.6;
+  const lx=5.5,bz=2.2,th=1.4,tp=0.6;
   const hGeo=new THREE.BufferGeometry();
-  const hV=new Float32Array([
-    // top face
-    -lx, th,-bz,   lx, th,-bz,   lx, th, bz,  -lx, th, bz,
-    // bottom face (tapered)
-    -lx+tp,-th,-bz+tp,  lx-tp,-th,-bz+tp,  lx-tp,-th, bz-tp,  -lx+tp,-th, bz-tp,
-  ]);
-  const hI=[0,2,1,0,3,2, 4,5,6,4,6,7, 0,1,5,0,5,4, 2,3,7,2,7,6, 0,4,7,0,7,3, 1,2,6,1,6,5];
+  const hV=new Float32Array([-lx,th,-bz,lx,th,-bz,lx,th,bz,-lx,th,bz,-lx+tp,-th,-bz+tp,lx-tp,-th,-bz+tp,lx-tp,-th,bz-tp,-lx+tp,-th,bz-tp]);
+  const hI=[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,2,3,7,2,7,6,0,4,7,0,7,3,1,2,6,1,6,5];
   hGeo.setAttribute('position',new THREE.BufferAttribute(hV,3));
-  hGeo.setIndex(hI);
-  hGeo.computeVertexNormals();
+  hGeo.setIndex(hI);hGeo.computeVertexNormals();
   boatGroup.add(Object.assign(new THREE.Mesh(hGeo,hullBrown),{castShadow:true,receiveShadow:true}));
 
-  // Keel strip
-  function add(g,x,y,z){const m=new THREE.Mesh(g,dkBrown);m.position.set(x,y,z);m.castShadow=true;boatGroup.add(m);return m;}
+  function add(g,x,y,z,m){const mesh=new THREE.Mesh(g,m||dkBrown);mesh.position.set(x,y,z);mesh.castShadow=true;boatGroup.add(mesh);return mesh;}
   add(new THREE.BoxGeometry(11.2,0.3,0.8),0,-th-0.05,0);
+  add(new THREE.BoxGeometry(10.5,0.4,3.6),0,th,0,wineRed);
 
-  // Deck slab — wine red
-  const deck=new THREE.Mesh(new THREE.BoxGeometry(10.5,0.4,3.6),wineRed);
-  deck.position.set(0,th+0.0,0);deck.castShadow=true;boatGroup.add(deck);
-
-  // ── MAST — vertical, centered on deck ──
-  // CylinderGeometry(radiusTop, radiusBottom, height, segments)
-  // aligned along Y axis by default — this is CORRECT (vertical)
   const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.20,11,6),dkBrown);
-  mast.position.set(0,th+0.4+5.5,0); // bottom of mast sits on deck
-  mast.castShadow=true;
-  boatGroup.add(mast);
-
-  // Yard (horizontal beam across mast, along Z)
+  mast.position.set(0,th+0.4+5.5,0);mast.castShadow=true;boatGroup.add(mast);
   const yard=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,8.0,6),dkBrown);
-  yard.rotation.x=Math.PI/2; // rotate so cylinder lies along Z
-  yard.position.set(0,th+0.4+9.8,0);
-  boatGroup.add(yard);
+  yard.rotation.x=Math.PI/2;yard.position.set(0,th+0.4+9.8,0);boatGroup.add(yard);
+  add(new THREE.BoxGeometry(0.5,0.5,0.5),0,th+0.4+11.2,0);
 
-  // Masthead cap
-  const cap=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),dkBrown);
-  cap.position.set(0,th+0.4+11.2,0);
-  boatGroup.add(cap);
-
-  // ── SAIL: 3 panels along Z, hanging from yard ──
-  // Panel height=6, width=2.4 each
-  const PH=6.2, PW=2.55;
+  const PH=6.2,PW=2.55;
   [[-PW,sailWine],[0,sailCream],[PW,sailWine]].forEach(([z,mat])=>{
     const s=new THREE.Mesh(new THREE.PlaneGeometry(PW-0.05,PH),mat);
-    // Panels lie in XZ plane, facing forward (+X), hanging from yard
-    s.rotation.y=Math.PI/2; // face along X axis
-    s.position.set(0,th+0.4+9.8-PH/2,z);
-    boatGroup.add(s);
+    s.rotation.y=Math.PI/2;s.position.set(0,th+0.4+9.8-PH/2,z);boatGroup.add(s);
   });
   sailMesh=boatGroup.children[boatGroup.children.length-1];
 
-  // Ropes from yard ends to hull corners
-  [[-3.8,0],[3.8,0]].forEach(([z,_])=>{
+  [[-3.8],[3.8]].forEach(([z])=>{
     const start=new THREE.Vector3(0,th+0.4+9.8,z);
     const end=new THREE.Vector3(z>0?4.5:-4.5,th+0.6,z>0?2.0:-2.0);
     const dir=new THREE.Vector3().subVectors(end,start);
     const len=dir.length();
     const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,len,4),dkBrown);
     const mid=new THREE.Vector3().addVectors(start,end).multiplyScalar(0.5);
-    rope.position.copy(mid);
-    rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+    rope.position.copy(mid);rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
     boatGroup.add(rope);
   });
 
-  // ── BOW dragon head — at +X end ──
-  // Neck (slightly angled upward)
-  const neck=new THREE.Mesh(new THREE.BoxGeometry(0.65,2.4,0.65),wineRed);
-  neck.position.set(5.8,th+1.0,0);neck.rotation.z=-0.35;boatGroup.add(neck);
-  // Head block
-  const hd=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.85,0.85),wineRed);
-  hd.position.set(6.6,th+2.4,0);hd.rotation.z=-0.2;boatGroup.add(hd);
-  // Snout
-  const sn=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.45,0.55),wineRed);
-  sn.position.set(7.5,th+2.1,0);boatGroup.add(sn);
-  // Jaw lower
-  const jaw=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.22,0.42),dkBrown);
-  jaw.position.set(7.4,th+1.75,0);boatGroup.add(jaw);
-  // Eye
-  const eye=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.22,0.1),eyeGlow);
-  eye.position.set(6.95,th+2.55,0.44);boatGroup.add(eye);
-  // Horn
-  const horn=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.16,0.85,4),dkBrown);
-  horn.position.set(6.5,th+3.35,0);horn.rotation.z=0.2;boatGroup.add(horn);
+  const neck=add(new THREE.BoxGeometry(0.65,2.4,0.65),5.8,th+1.0,0,wineRed);neck.rotation.z=-0.35;
+  const hd=add(new THREE.BoxGeometry(1.5,0.85,0.85),6.6,th+2.4,0,wineRed);hd.rotation.z=-0.2;
+  add(new THREE.BoxGeometry(1.1,0.45,0.55),7.5,th+2.1,0,wineRed);
+  add(new THREE.BoxGeometry(0.8,0.22,0.42),7.4,th+1.75,0);
+  add(new THREE.BoxGeometry(0.22,0.22,0.1),6.95,th+2.55,0.44,eyeGlow);
+  const horn=add(new THREE.CylinderGeometry(0.04,0.16,0.85,4),6.5,th+3.35,0);horn.rotation.z=0.2;
+  const st1=add(new THREE.BoxGeometry(0.65,2.0,0.6),-5.8,th+1.0,0,wineRed);st1.rotation.z=0.35;
+  const st2=add(new THREE.BoxGeometry(0.5,0.6,0.5),-6.3,th+2.5,0,wineRed);st2.rotation.z=0.65;
 
-  // ── STERN tail — at -X end ──
-  const st1=new THREE.Mesh(new THREE.BoxGeometry(0.65,2.0,0.6),wineRed);
-  st1.position.set(-5.8,th+1.0,0);st1.rotation.z=0.35;boatGroup.add(st1);
-  const st2=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.6,0.5),wineRed);
-  st2.position.set(-6.3,th+2.5,0);st2.rotation.z=0.65;boatGroup.add(st2);
-
-  // ── SHIELDS along both sides (Z+ and Z-) ──
   [-3.5,-1.75,0,1.75,3.5].forEach((x,i)=>{
     [1,-1].forEach(z=>{
       const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.56,0.56,0.12,8),shCream);
@@ -392,7 +395,6 @@ function mkBoat(){
     });
   });
 
-  // ── OARS ──
   oarGroups=[];
   [-3.5,-1.0,1.5].forEach(x=>{
     [-1,1].forEach(z=>{
@@ -401,180 +403,117 @@ function mkBoat(){
       sh.rotation.z=z*0.55;sh.rotation.x=0.18;
       const bl=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.85,0.32),hullBrown);
       bl.position.set(z*1.8,-2.2,z*0.75);
-      g.add(sh);g.add(bl);
-      g.position.set(x,th-0.2,z*2.2);
+      g.add(sh);g.add(bl);g.position.set(x,th-0.2,z*2.2);
       g.userData={ph:Math.random()*Math.PI*2,s:z};
       boatGroup.add(g);oarGroups.push(g);
     });
   });
 
-  // Warm boat light
-  const bl=new THREE.PointLight(0xfff0cc,6,40);
-  bl.position.set(0,8,0);
-  boatGroup.add(bl);
-
-  // Position: Y will be set in loop riding waves
+  const bl=new THREE.PointLight(0xfff0cc,6,40);bl.position.set(0,8,0);boatGroup.add(bl);
   boatGroup.position.set(0,BOAT_BASE_Y,0);
   scene.add(boatGroup);
 }
 
 function mkClouds(){
-  // More clouds — 28 total
   for(let i=0;i<28;i++){
     const g=new THREE.Group();
     const n=3+Math.floor(Math.random()*5);
     for(let j=0;j<n;j++){
       const r=5+Math.random()*9;
-      const m=new THREE.Mesh(
-        new THREE.SphereGeometry(r,6,4),
-        new THREE.MeshStandardMaterial({
-          color:new THREE.Color().setHSL(0.58,0.04,0.50+Math.random()*.2),
-          roughness:1,transparent:true,opacity:.45+Math.random()*.3,flatShading:true
-        })
-      );
-      m.scale.y=0.25+Math.random()*.18;
-      m.position.set((Math.random()-.5)*22,(Math.random()-.5)*4,(Math.random()-.5)*14);
-      g.add(m);
+      const m=new THREE.Mesh(new THREE.SphereGeometry(r,6,4),
+        new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.58,0.04,0.50+Math.random()*.2),roughness:1,transparent:true,opacity:.45+Math.random()*.3,flatShading:true}));
+      m.scale.y=0.25+Math.random()*.18;m.position.set((Math.random()-.5)*22,(Math.random()-.5)*4,(Math.random()-.5)*14);g.add(m);
     }
     g.position.set((Math.random()-.5)*700,55+Math.random()*35,(Math.random()-.5)*700);
     g.userData={spd:0.3+Math.random()*.6,type:'cloud'};
-    scene.add(g);
-    clouds.push({mesh:g,type:'cloud'});
+    scene.add(g);clouds.push({mesh:g,type:'cloud'});
   }
 }
 
-// ── WAKE ──
 function spawnWake(x,z){
-  const m=new THREE.Mesh(
-    new THREE.PlaneGeometry(1.2,1.2),
-    new THREE.MeshBasicMaterial({color:0x99bbcc,transparent:true,opacity:.4,side:THREE.DoubleSide})
-  );
-  m.rotation.x=-Math.PI/2;
-  m.position.set(x+(Math.random()-.5)*1.5,0.15,z+(Math.random()-.5)*1.5);
-  m.userData.life=1;
-  scene.add(m);wakes.push(m);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(1.2,1.2),
+    new THREE.MeshBasicMaterial({color:0x99bbcc,transparent:true,opacity:.4,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2;m.position.set(x+(Math.random()-.5)*1.5,0.15,z+(Math.random()-.5)*1.5);
+  m.userData.life=1;scene.add(m);wakes.push(m);
 }
 
-// ── LIGHTNING — more frequent, bigger flash ──
 function doLightning(){
   const fl=document.getElementById('flash');
-  // double flash effect
-  fl.style.transition='opacity .04s';
-  fl.style.opacity='.22';
+  fl.style.transition='opacity .04s';fl.style.opacity='.22';
   setTimeout(()=>{fl.style.opacity='0';},70);
   setTimeout(()=>{fl.style.opacity='.14';},130);
   setTimeout(()=>{fl.style.opacity='0';},190);
-
-  // bright point light
   const l=new THREE.PointLight(0xbbccff,80,400);
   l.position.set((Math.random()-.5)*300,100,(Math.random()-.5)*300);
-  scene.add(l);
-  setTimeout(()=>scene.remove(l),200);
-  // secondary bolt
+  scene.add(l);setTimeout(()=>scene.remove(l),200);
   setTimeout(()=>{
     const l2=new THREE.PointLight(0xaabbff,50,300);
     l2.position.set((Math.random()-.5)*200,90,(Math.random()-.5)*200);
-    scene.add(l2);
-    setTimeout(()=>scene.remove(l2),100);
+    scene.add(l2);setTimeout(()=>scene.remove(l2),100);
   },140);
 }
 
-// ── GAME LOOP ──
 function loop(){
   if(!running||!boatGroup)return;
   requestAnimationFrame(loop);
   const dt=Math.min(clock.getDelta(),0.05);
   const t=clock.getElapsedTime();
 
-  // ── WATER WAVES — more visible, higher amplitude ──
   const pos=waterGeo.attributes.position;
   for(let i=0;i<pos.count;i++){
-    const wx=pos.getX(i),wz=pos.getY(i); // Y here is the Z-axis of the plane before rotation
-    pos.setZ(i,waveH(wx,wz,t)*1.8); // scale up for visual impact
+    pos.setZ(i,waveH(pos.getX(i),pos.getY(i),t)*1.8);
   }
-  pos.needsUpdate=true;
-  waterGeo.computeVertexNormals();
+  pos.needsUpdate=true;waterGeo.computeVertexNormals();
 
-  // ── BOAT MOVEMENT — boatAngle=0 → bow faces +X ──
   const MAX=20,ACC=14,FRIC=5.5,TURN=1.8;
-  if(K.u) boatSpeed=Math.min(boatSpeed+ACC*dt,MAX);
-  if(K.d) boatSpeed=Math.max(boatSpeed-ACC*dt*2.0,-MAX*0.35);
+  if(K.u)boatSpeed=Math.min(boatSpeed+ACC*dt,MAX);
+  if(K.d)boatSpeed=Math.max(boatSpeed-ACC*dt*2.0,-MAX*0.35);
   if(!K.u&&!K.d){boatSpeed*=Math.pow(1-FRIC*dt,1);if(Math.abs(boatSpeed)<0.05)boatSpeed=0;}
   const tf=0.15+Math.abs(boatSpeed)/MAX*0.85;
-  if(K.l) boatAngle+=TURN*dt*tf;
-  if(K.r) boatAngle-=TURN*dt*tf;
+  if(K.l)boatAngle+=TURN*dt*tf;
+  if(K.r)boatAngle-=TURN*dt*tf;
 
-  // Movement direction: bow is along +X in local space
   const dx=Math.cos(boatAngle)*boatSpeed*dt;
   const dz=-Math.sin(boatAngle)*boatSpeed*dt;
-  boatGroup.position.x+=dx;
-  boatGroup.position.z+=dz;
+  boatGroup.position.x+=dx;boatGroup.position.z+=dz;
 
-  // ── BOAT RIDES WAVES — always above water ──
-  const bx=boatGroup.position.x, bz2=boatGroup.position.z;
+  const bx=boatGroup.position.x,bz2=boatGroup.position.z;
   const wh=waveH(bx,bz2,t);
-  // Hull bottom at local y≈-1.4, so world bottom = boatGroup.y - 1.4
-  // Keep bottom at wave height + small margin
-  boatGroup.position.y = wh + BOAT_BASE_Y;
+  boatGroup.position.y=wh+BOAT_BASE_Y;
 
-  // Rock with wave gradient (slope)
   const dzdx=(waveH(bx+0.8,bz2,t)-waveH(bx-0.8,bz2,t))/1.6;
   const dzdz=(waveH(bx,bz2+0.8,t)-waveH(bx,bz2-0.8,t))/1.6;
-  boatGroup.rotation.z = -dzdx*0.18 + (K.l?.06:K.r?-.06:0);
-  boatGroup.rotation.x =  dzdz*0.18 + (boatSpeed/MAX)*0.04;
-  // Y rotation = heading (boatAngle). bow along +X, so rotation.y = angle
-  boatGroup.rotation.y = boatAngle;
+  boatGroup.rotation.z=-dzdx*0.18+(K.l?.06:K.r?-.06:0);
+  boatGroup.rotation.x=dzdz*0.18+(boatSpeed/MAX)*0.04;
+  boatGroup.rotation.y=boatAngle;
 
-  // Oars
-  oarGroups.forEach(o=>{
-    o.rotation.x=Math.sin(t*2.5+o.userData.ph)*0.38*(Math.abs(boatSpeed)/MAX+.2)*o.userData.s;
-  });
+  oarGroups.forEach(o=>{o.rotation.x=Math.sin(t*2.5+o.userData.ph)*0.38*(Math.abs(boatSpeed)/MAX+.2)*o.userData.s;});
+  if(sailMesh)sailMesh.rotation.z=Math.sin(t*.65)*.025;
 
-  // Sail flutter
-  if(sailMesh) sailMesh.rotation.z=Math.sin(t*.65)*.025;
-
-  // Foam crests drift
   clouds.forEach(c=>{
-    if(c.type==='cloud'){
-      c.mesh.position.x+=c.mesh.userData.spd*dt*1.8;
-      if(c.mesh.position.x>500)c.mesh.position.x=-500;
-    }
+    if(c.type==='cloud'){c.mesh.position.x+=c.mesh.userData.spd*dt*1.8;if(c.mesh.position.x>500)c.mesh.position.x=-500;}
     if(c.type==='foam'){
-      c.mesh.position.x+=c.mesh.userData.spd*dt*2.5;
-      if(c.mesh.position.x>500)c.mesh.position.x=-500;
-      // also ride wave surface
+      c.mesh.position.x+=c.mesh.userData.spd*dt*2.5;if(c.mesh.position.x>500)c.mesh.position.x=-500;
       c.mesh.position.y=waveH(c.mesh.position.x,c.mesh.position.z,t)*1.8+0.18;
     }
   });
 
-  // Lightning — more frequent
-  ltTimer-=dt;
-  if(ltTimer<=0){doLightning();ltTimer=2.5+Math.random()*6;}
+  ltTimer-=dt;if(ltTimer<=0){doLightning();ltTimer=2.5+Math.random()*6;}
 
-  // Wakes
-  if(Math.abs(boatSpeed)>0.5&&Math.random()<.35){
-    spawnWake(boatGroup.position.x-dx*3,boatGroup.position.z-dz*3);
-  }
+  if(Math.abs(boatSpeed)>0.5&&Math.random()<.35)spawnWake(boatGroup.position.x-dx*3,boatGroup.position.z-dz*3);
   for(let i=wakes.length-1;i>=0;i--){
-    const w=wakes[i];
-    w.userData.life-=dt*.65;
-    w.material.opacity=w.userData.life*.4;
+    const w=wakes[i];w.userData.life-=dt*.65;w.material.opacity=w.userData.life*.4;
     w.scale.setScalar(1+(1-w.userData.life)*5);
     if(w.userData.life<=0){scene.remove(w);wakes.splice(i,1);}
   }
 
-  // ── CAMERA — follows boat, far isometric view ──
-  const tx=boatGroup.position.x+CAM_D;
-  const ty=CAM_D*0.6;
-  const tz=boatGroup.position.z+CAM_D;
+  const tx=boatGroup.position.x+CAM_D,ty=CAM_D*0.6,tz=boatGroup.position.z+CAM_D;
   camera.position.x+=(tx-camera.position.x)*5*dt;
   camera.position.y+=(ty-camera.position.y)*3*dt;
   camera.position.z+=(tz-camera.position.z)*5*dt;
   camera.lookAt(boatGroup.position.x,boatGroup.position.y*0.3,boatGroup.position.z);
 
-  // HUD
-  document.getElementById('coord').textContent=
-    `${(63+boatGroup.position.z*.0012).toFixed(3)}°N · ${(17+boatGroup.position.x*.0018).toFixed(3)}°W`;
+  document.getElementById('coord').textContent=`${(63+boatGroup.position.z*.0012).toFixed(3)}°N · ${(17+boatGroup.position.x*.0018).toFixed(3)}°W`;
   document.getElementById('sf').style.width=(Math.abs(boatSpeed)/MAX*100)+'%';
 
   renderer.render(scene,camera);
@@ -612,15 +551,23 @@ function onResize(){
 }
 
 function startGame(){
+  // Init audio on user gesture (required by browsers)
+  initAudio();
+
   document.getElementById('ls').classList.add('out');
   document.getElementById('hud').classList.add('on');
   document.getElementById('speedbar').classList.add('on');
   document.getElementById('ctrl').classList.add('on');
+  document.getElementById('muteBtn').classList.add('on');
   if(innerWidth<=700){
     document.getElementById('mctrl').style.display='flex';
     document.getElementById('ctrl').style.display='none';
   }
-  setTimeout(()=>{running=true;clock.start();loop();},600);
+  // After fade-in: switch to game audio mix
+  setTimeout(()=>{
+    running=true;clock.start();loop();
+    setAudioState('game');
+  },600);
 }
 
 init();
