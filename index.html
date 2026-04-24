@@ -657,12 +657,12 @@ function buildBoat(){
     boatGroup.add(barrel);
   });
 
-  boatGroup.position.set(0,2,0); boatGroup.scale.set(1.5,1.5,1.5);
+  boatGroup.position.set(0,0,0); boatGroup.scale.set(1.0);
   // Spotlight direto no barco
-  const boatSpot = new THREE.PointLight(0xfff5dd, 3.5, 40);
-  boatSpot.position.set(0, 12, 0);
+  const boatSpot = new THREE.PointLight(0xfff5dd, 15, 50);
+  boatSpot.position.set(0, 10, 0);
   boatGroup.add(boatSpot);
-  boatGroup.scale.setScalar(1.8);
+
   scene.add(boatGroup);
 }
 
