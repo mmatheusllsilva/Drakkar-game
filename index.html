@@ -440,36 +440,49 @@ function mkBoat(){
   const brown  = mat(0x7a3a18);
   const dkBrown= mat(0x4a200a);
   const red    = mat(0xb02818);
-  const cream  = mat(0xddd5b8);
-  const whtSail= mat(0xdedad0,true);
   const redSail= mat(0xaa2018,true);
   const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2,flatShading:true});
   
-  // Hull
-  const hull = mkHull(brown);
+  // Hull - Agora passando parâmetros para o novo comprimento (12.0)
+  const hull = mkHull(brown, 12.0, 2.1, 1.8, 0.55);
   boatGroup.add(hull);
   
-  // Deck
-  add(boatGroup, new THREE.BoxGeometry(8.8,0.35,3.8), red, 0, 1.2, 0);
+  // Deck - Aumentado para 22.0 de comprimento para cobrir o casco longo
+  add(boatGroup, new THREE.BoxGeometry(22.0, 0.45, 3.8), red, 0, 1.6, 0);
   
   // Mastro
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.18,10,6), dkBrown);
-  mast.position.set(0,6.0,0);
+  mast.position.set(0, 6.0, 0);
   boatGroup.add(mast);
 
-  // Vela (Simplificada para o exemplo)
+  // Vela
   const sail = new THREE.Mesh(new THREE.PlaneGeometry(6, 8), redSail);
   sail.position.set(0, 7, 0.1);
   boatGroup.add(sail);
   sailMesh = sail;
 
+  // ── CABEÇA DE DRAGÃO (PROA) - Reposicionada para a nova frente (12.5) ──
+  const neck = add(boatGroup, new THREE.BoxGeometry(0.6, 2.8, 0.6), red, 11.5, 2.0, 0);
+  neck.rotation.z = -0.35;
+  
+  const head = add(boatGroup, new THREE.BoxGeometry(1.6, 0.9, 0.9), red, 12.5, 3.3, 0);
+  head.rotation.z = -0.2;
+  
+  add(boatGroup, new THREE.BoxGeometry(1.2, 0.5, 0.6), red, 13.5, 3.0, 0); // Focinho
+  add(boatGroup, new THREE.BoxGeometry(0.25, 0.25, 0.1), eyeM, 13.05, 3.4, 0.4); // Olho
+  
+  // ── CAUDA (POPA) - Reposicionada para o novo fundo (-11.5) ──
+  const tail = add(boatGroup, new THREE.BoxGeometry(0.6, 2.2, 0.6), red, -11.5, 2.1, 0);
+  tail.rotation.z = 0.35;
+
   boatGroup.position.set(0, 1.4, 0);
   scene.add(boatGroup);
 }
- 
-function mkHull(mat){
+
+// ── HULL (CASCO) DINÂMICO ──
+function mkHull(mat, lx = 4.8, bz = 2.1, th = 1.2, taper = 0.55){
   const geo = new THREE.BufferGeometry();
-  const lx=4.8, bz=2.1, th=1.2, taper=0.55;
+  // lx agora é dinâmico, permitindo o barco ser longo
   const vertices = new Float32Array([
     -lx, th,-bz,  lx, th,-bz,  lx, th, bz,  -lx, th, bz,
     -lx+taper,-th,-bz+taper,  lx-taper,-th,-bz+taper,  lx-taper,-th, bz-taper,  -lx+taper,-th, bz-taper,
@@ -482,7 +495,6 @@ function mkHull(mat){
   geo.computeVertexNormals();
   return new THREE.Mesh(geo, mat);
 }
-
 function buildClouds(){
   // Nuvens de tempestade escuras
   for(let i=0;i<16;i++){
