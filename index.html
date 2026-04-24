@@ -349,7 +349,7 @@ function initThree(){
   camera=new THREE.OrthographicCamera(-d*aspect,d*aspect,d,-d,0.1,1000);
   camera.position.set(50,50,50);
   camera.lookAt(0,0,0);
-  camera.zoom=1.4;
+  camera.zoom=5.0;
   camera.updateProjectionMatrix();
 
   buildLights();
@@ -362,28 +362,19 @@ function initThree(){
 }
 
 function buildLights(){
-  // Ambiente suave - dia nublado
-  scene.add(new THREE.AmbientLight(0x90a8c0, 2.0));
-  // Sol principal - vem de lado (tarde)
-  const sky=new THREE.DirectionalLight(0xffd080, 2.5);
-  sky.position.set(80,60,40);
-  sky.castShadow=true;
-  sky.shadow.mapSize.set(2048,2048);
-  sky.shadow.camera.near=1;
-  sky.shadow.camera.far=400;
-  sky.shadow.camera.left=-60;
-  sky.shadow.camera.right=60;
-  sky.shadow.camera.top=60;
-  sky.shadow.camera.bottom=-60;
-  scene.add(sky);
-  // Preenchimento frio do outro lado
-  const fill=new THREE.DirectionalLight(0x8899cc, 1.2);
-  fill.position.set(-60,30,-40);
-  scene.add(fill);
-  // Reflexo sutil do mar
-  const sea=new THREE.PointLight(0x4477aa, 0.8, 80);
-  sea.position.set(0,2,0);
-  scene.add(sea);
+  // Luz ambiente forte para tirar o "breu"
+  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+  // Luz direcional (O Sol)
+  const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  sunLight.position.set(10, 20, 10);
+  sunLight.castShadow = true;
+  scene.add(sunLight);
+
+  // Luz pontual focada no barco para dar brilho na madeira
+  const pointLight = new THREE.PointLight(0xffffff, 2, 50);
+  pointLight.position.set(0, 5, 0);
+  scene.add(pointLight);
 }
 
 function buildSky(){
@@ -771,7 +762,7 @@ function loop(){
   boatGroup.position.z+=dz;
 
   // Bob & roll
-  boatGroup.position.y=1.5+Math.sin(t*1.1)*.28+Math.sin(t*.7)*.15;
+  boatGroup.position.y = Math.sin(t * 1.1) * 0.28;
   boatGroup.rotation.z=Math.sin(t*.9)*.032+(keys.left?.055:keys.right?-.055:0);
   boatGroup.rotation.x=Math.sin(t*.65)*.022+(boatSpeed/maxSpd)*.04;
   boatGroup.rotation.y=boatAngle;
