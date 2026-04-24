@@ -648,7 +648,7 @@ function buildBoat(){
     boatGroup.add(barrel);
   });
 
-  boatGroup.position.set(5.0, 5.0, 5.0); boatGroup.scale.set(0, 0, 0);
+  boatGroup.position.set(0, 0,); boatGroup.scale.set(1, 1, 1);
   // Spotlight direto no barco
   const boatSpot = new THREE.PointLight(0xfff5dd, 15, 50);
   boatSpot.position.set(0, 10, 0);
@@ -710,8 +710,9 @@ function triggerLightning(){
 let lightningTimer=0;
 
 function loop(){
-  if(!gameRunning)return;
+  if (!gameRunning || !boatGroup) return;
   requestAnimationFrame(loop);
+  renderer.render(scene, camera);
   const dt=clock.getDelta();
   const t=clock.getElapsedTime();
 
