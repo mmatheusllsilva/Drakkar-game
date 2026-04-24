@@ -444,7 +444,7 @@ function mkBoat(){
   const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2,flatShading:true});
   
   // Hull - Agora passando parâmetros para o novo comprimento (12.0)
-  const hull = mkHull(brown, 12.0, 2.1, 1.8, 0.55);
+  const hull = mkHull(brown, 12.0, 2.5, 1.8, 0.55);
   boatGroup.add(hull);
   
   // Deck - Aumentado para 22.0 de comprimento para cobrir o casco longo
@@ -604,7 +604,7 @@ function loop(){
   boatGroup.position.y = Math.sin(t * 1.1) * 0.28;
   boatGroup.rotation.z=Math.sin(t*.9)*.032+(keys.left?.055:keys.right?-.055:0);
   boatGroup.rotation.x=Math.sin(t*.65)*.022+(boatSpeed/maxSpd)*.04;
-  boatGroup.rotation.y=boatAngle;
+  boatGroup.rotation.y= Math.PI / 2;
 
   // Animação dos remos
   oarGroups.forEach(og=>{
