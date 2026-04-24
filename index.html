@@ -844,22 +844,36 @@ function onResize(){
 }
 
 // ═══════════════════════════════════
-// START
+// START - Função que inicia o jogo
 // ═══════════════════════════════════
 function startGame(){
+  // Remove a tela de loading com transição
   document.getElementById('ls').classList.add('out');
+  
+  // Ativa a interface (HUD e Controles)
   document.getElementById('hud').classList.add('on');
   document.getElementById('speedbar').classList.add('on');
   document.getElementById('ctrl').classList.add('on');
-  if(window.innerWidth<=700){
-    document.getElementById('mctrl').style.display='flex';
-    document.getElementById('ctrl').style.display='none';
+  
+  // Ajuste para dispositivos móveis
+  if(window.innerWidth <= 700){
+    document.getElementById('mctrl').style.display = 'flex';
+    document.getElementById('ctrl').style.display = 'none';
   }
-  setTimeout(()=>{gameRunning=true;loop();},600);
+  
+  // Pequeno delay para a transição suave antes de começar o loop
+  setTimeout(() => {
+    gameRunning = true;
+    loop(); 
+  }, 600);
 }
 
+// Inicialização vital
 initThree();
-renderer.render(scene,camera);
+
+// Renderiza o primeiro frame parado (para não ver tela preta atrás do loading)
+renderer.render(scene, camera);
+
 </script>
 </body>
 </html>
