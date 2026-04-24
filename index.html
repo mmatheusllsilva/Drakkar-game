@@ -1,1397 +1,630 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Drakkar | Matheus Lopes</title>
-
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&display=swap');
-
-
-
 *{margin:0;padding:0;box-sizing:border-box}
-
 body{background:#0a0a0a;overflow:hidden;width:100vw;height:100vh;font-family:'Cinzel',serif;color:#fff}
-
 canvas#c{display:block;width:100vw;height:100vh}
 
-
-
-/* ── LOADING ── */
-
-#ls{
-
-  position:fixed;inset:0;z-index:1000;
-
-  background:radial-gradient(ellipse at 50% 100%, #1a1a1a 0%, #0a0a0a 60%, #000 100%);
-
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-
-  transition:opacity 1.4s ease, visibility 1.4s ease;
-
-}
-
+#ls{position:fixed;inset:0;z-index:1000;background:radial-gradient(ellipse at 50% 100%,#1a1a1a 0%,#0a0a0a 60%,#000 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.4s ease,visibility 1.4s ease;}
 #ls.out{opacity:0;visibility:hidden;pointer-events:none}
-
-
-
-/* Relâmpagos de fundo */
-
 .storm-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-
-.bolt{
-
-  position:absolute;top:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(200,220,255,0.6),transparent);
-
-  animation:boltFlash linear infinite;
-
-}
-
-@keyframes boltFlash{
-
-  0%,100%{opacity:0;height:0;top:0}
-
-  48%{opacity:0;height:0;top:0}
-
-  50%{opacity:1;height:40vh}
-
-  55%{opacity:0;height:50vh}
-
-}
-
-
-
-/* Barco SVG na loading */
-
-.ship-wrap{position:relative;margin-bottom:1.5rem;filter:drop-shadow(0 0 20px rgba(180,200,255,0.4))}
-
+.bolt{position:absolute;top:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(200,220,255,0.6),transparent);animation:boltFlash linear infinite;}
+@keyframes boltFlash{0%,100%{opacity:0;height:0}48%{opacity:0;height:0}50%{opacity:1;height:40vh}55%{opacity:0;height:50vh}}
+.ship-wrap{margin-bottom:1.5rem;filter:drop-shadow(0 0 20px rgba(180,200,255,0.4))}
 .ship-svg{width:clamp(160px,22vw,260px);animation:shipRock 4s ease-in-out infinite}
-
-@keyframes shipRock{
-
-  0%,100%{transform:rotate(-2deg) translateY(0)}
-
-  25%{transform:rotate(1deg) translateY(-6px)}
-
-  75%{transform:rotate(-1deg) translateY(4px)}
-
-}
-
-
-
-.ls-title{
-
-  font-family:'Cinzel Decorative',serif;
-
-  font-size:clamp(1.6rem,4vw,3rem);
-
-  font-weight:900;
-
-  letter-spacing:0.1em;
-
-  color:#e8e8e8;
-
-  text-shadow:0 0 30px rgba(180,200,255,0.5), 0 2px 0 rgba(0,0,0,0.8);
-
-  margin-bottom:.3rem;
-
-  text-align:center;
-
-}
-
-.ls-sub{
-
-  font-size:clamp(0.55rem,1.2vw,0.75rem);
-
-  letter-spacing:0.45em;
-
-  color:rgba(180,200,255,0.5);
-
-  text-transform:uppercase;
-
-  margin-bottom:2.5rem;
-
-}
-
+@keyframes shipRock{0%,100%{transform:rotate(-2deg) translateY(0)}25%{transform:rotate(1deg) translateY(-6px)}75%{transform:rotate(-1deg) translateY(4px)}}
+.ls-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.6rem,4vw,3rem);font-weight:900;letter-spacing:0.1em;color:#e8e8e8;text-shadow:0 0 30px rgba(180,200,255,0.5),0 2px 0 rgba(0,0,0,0.8);margin-bottom:.3rem;text-align:center;}
+.ls-sub{font-size:clamp(0.55rem,1.2vw,0.75rem);letter-spacing:0.45em;color:rgba(180,200,255,0.5);text-transform:uppercase;margin-bottom:2.5rem;}
 .prog-wrap{width:clamp(220px,38vw,340px);height:3px;background:rgba(255,255,255,0.07);border-radius:3px;margin-bottom:.7rem;overflow:hidden}
-
 .prog-fill{height:100%;width:0%;background:linear-gradient(90deg,#556,#aac,#fff);border-radius:3px;transition:width .35s ease;box-shadow:0 0 8px rgba(180,200,255,0.7)}
-
 .prog-txt{font-size:.65rem;letter-spacing:.35em;color:rgba(255,255,255,.3);margin-bottom:2.5rem;text-align:center}
-
-
-
-#play-btn{
-
-  display:none;
-
-  background:rgba(255,255,255,0.04);
-
-  border:1px solid rgba(180,200,255,0.45);
-
-  color:#c8d8ff;
-
-  font-family:'Cinzel',serif;
-
-  font-size:clamp(.75rem,1.4vw,.9rem);
-
-  letter-spacing:.4em;
-
-  text-transform:uppercase;
-
-  padding:14px 52px;
-
-  cursor:pointer;
-
-  transition:background .3s,box-shadow .3s,color .3s;
-
-  animation:glowPulse 2.5s ease-in-out infinite;
-
-}
-
-@keyframes glowPulse{
-
-  0%,100%{box-shadow:0 0 10px rgba(180,200,255,.2)}
-
-  50%{box-shadow:0 0 28px rgba(180,200,255,.5), 0 0 60px rgba(100,130,200,.2)}
-
-}
-
+#play-btn{display:none;background:rgba(255,255,255,0.04);border:1px solid rgba(180,200,255,0.45);color:#c8d8ff;font-family:'Cinzel',serif;font-size:clamp(.75rem,1.4vw,.9rem);letter-spacing:.4em;text-transform:uppercase;padding:14px 52px;cursor:pointer;transition:background .3s,box-shadow .3s,color .3s;animation:glowPulse 2.5s ease-in-out infinite;}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px rgba(180,200,255,.2)}50%{box-shadow:0 0 28px rgba(180,200,255,.5),0 0 60px rgba(100,130,200,.2)}}
 #play-btn:hover{background:rgba(180,200,255,.1);color:#fff;box-shadow:0 0 40px rgba(180,200,255,.4)}
-
-
-
 .ls-hint{margin-top:1.4rem;font-size:.58rem;letter-spacing:.25em;color:rgba(255,255,255,.18)}
 
-
-
-/* ── HUD ── */
-
-#hud{
-
-  position:fixed;top:0;left:0;right:0;
-
-  padding:22px 32px;
-
-  display:flex;justify-content:space-between;align-items:flex-start;
-
-  pointer-events:none;z-index:10;
-
-  opacity:0;transition:opacity 1.2s ease;
-
-}
-
+#hud{position:fixed;top:0;left:0;right:0;padding:22px 32px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:10;opacity:0;transition:opacity 1.2s ease;}
 #hud.on{opacity:1}
-
-.hud-back a{
-
-  font-size:.6rem;letter-spacing:.3em;color:rgba(255,255,255,.3);
-
-  text-decoration:none;text-transform:uppercase;pointer-events:all;transition:color .3s;
-
-}
-
+.hud-back a{font-size:.6rem;letter-spacing:.3em;color:rgba(255,255,255,.3);text-decoration:none;text-transform:uppercase;pointer-events:all;transition:color .3s;}
 .hud-back a:hover{color:rgba(180,200,255,.8)}
-
 .hud-mid{text-align:center;line-height:1.9}
-
 .hud-name{font-family:'Cinzel Decorative',serif;font-size:.75rem;letter-spacing:.2em;color:rgba(255,255,255,.55)}
-
 .hud-coord{font-size:.55rem;letter-spacing:.25em;color:rgba(180,200,255,.4)}
-
 .hud-right{text-align:right;font-size:.55rem;letter-spacing:.2em;color:rgba(255,255,255,.2);line-height:2}
 
-
-
-/* speed bar */
-
-#speedbar{
-
-  position:fixed;bottom:80px;right:32px;
-
-  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
-
-  opacity:0;transition:opacity 1.2s;z-index:10;pointer-events:none;
-
-}
-
+#speedbar{position:fixed;bottom:80px;right:32px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;opacity:0;transition:opacity 1.2s;z-index:10;pointer-events:none;}
 #speedbar.on{opacity:1}
-
 .spd-label{font-size:.5rem;letter-spacing:.3em;color:rgba(255,255,255,.25)}
-
 .spd-track{width:90px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
-
 .spd-fill{height:100%;width:0%;background:linear-gradient(90deg,#334,#aac);transition:width .15s linear}
 
-
-
-/* ── CONTROLS ── */
-
-#ctrl{
-
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-
-  display:flex;gap:18px;align-items:center;
-
-  opacity:0;transition:opacity 1.2s;z-index:10;pointer-events:none;
-
-}
-
-#ctrl.on{opacity:1}
-
+#ctrl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;opacity:0;transition:opacity 1.2s;z-index:10;pointer-events:none;}
+#ctrl.on{opacity:1;pointer-events:all}
 .key{display:flex;flex-direction:column;align-items:center;gap:4px}
-
-.key-k{
-
-  width:34px;height:34px;border:1px solid rgba(255,255,255,.18);border-radius:4px;
-
-  display:flex;align-items:center;justify-content:center;
-
-  font-size:.75rem;color:rgba(255,255,255,.4);background:rgba(255,255,255,.03);
-
-}
-
+.key-k{width:34px;height:34px;border:1px solid rgba(255,255,255,.18);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:rgba(255,255,255,.4);background:rgba(255,255,255,.03);}
 .key-l{font-size:.47rem;letter-spacing:.2em;color:rgba(255,255,255,.18)}
-
-
-
-/* mobile */
-
-#mctrl{
-
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-
-  display:none;gap:14px;align-items:center;z-index:10;
-
-}
-
+#mctrl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:none;gap:14px;align-items:center;z-index:10;}
 @media(max-width:700px){#mctrl{display:flex}#ctrl{display:none}}
-
-.mbtn{
-
-  width:60px;height:60px;border-radius:50%;
-
-  border:1px solid rgba(255,255,255,.22);
-
-  background:rgba(0,0,0,.45);backdrop-filter:blur(8px);
-
-  color:rgba(255,255,255,.55);font-size:1.3rem;
-
-  display:flex;align-items:center;justify-content:center;
-
-  cursor:pointer;user-select:none;touch-action:manipulation;
-
-  transition:background .2s,border-color .2s;
-
-}
-
+.mbtn{width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:rgba(255,255,255,.55);font-size:1.3rem;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;touch-action:manipulation;transition:background .2s,border-color .2s;}
 .mbtn:active{background:rgba(180,200,255,.12);border-color:rgba(180,200,255,.5)}
-
-
-
-/* vignette */
-
-.vig{
-
-  position:fixed;inset:0;pointer-events:none;z-index:5;
-
-  background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.72) 100%);
-
-}
-
-
-
-/* lightning flash overlay */
-
-#flash{position:fixed;inset:0;background:#c8d8ff;opacity:0;pointer-events:none;z-index:8;transition:opacity .08s}
-
+.vig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.72) 100%);}
+#flash{position:fixed;inset:0;background:#c8d8ff;opacity:0;pointer-events:none;z-index:8;transition:opacity .05s}
 </style>
-
 </head>
-
 <body>
 
-
-
-<!-- LOADING -->
-
 <div id="ls">
-
   <div class="storm-bg" id="stormBg"></div>
-
-
-
-  <!-- Drakkar SVG detalhado -->
-
   <div class="ship-wrap">
-
     <svg class="ship-svg" viewBox="0 0 300 170" fill="none" xmlns="http://www.w3.org/2000/svg">
-
-      <!-- Ondas embaixo -->
-
       <path d="M10 140 Q50 130 90 140 Q130 150 170 140 Q210 130 250 140 Q275 145 290 140" stroke="rgba(140,160,200,0.3)" stroke-width="1.5" fill="none"/>
-
       <path d="M0 150 Q40 142 80 150 Q120 158 160 150 Q200 142 240 150 Q270 155 300 150" stroke="rgba(140,160,200,0.2)" stroke-width="1" fill="none"/>
-
-      <!-- Hull principal -->
-
-      <path d="M30 110 Q80 130 150 132 Q220 130 268 110 L255 125 Q200 148 150 150 Q100 148 45 125 Z" fill="rgba(60,50,40,0.9)" stroke="rgba(160,150,130,0.6)" stroke-width="1.5"/>
-
-      <!-- Ripas do casco -->
-
-      <path d="M50 118 Q150 134 250 118" stroke="rgba(100,85,65,0.5)" stroke-width="1" fill="none"/>
-
-      <path d="M60 123 Q150 138 240 123" stroke="rgba(100,85,65,0.4)" stroke-width="1" fill="none"/>
-
-      <!-- Deck -->
-
-      <rect x="55" y="104" width="190" height="10" rx="2" fill="rgba(80,65,50,0.95)" stroke="rgba(140,120,90,0.5)" stroke-width="1"/>
-
-      <!-- Cabeça de dragão (proa) -->
-
-      <path d="M255 108 Q278 98 288 86 Q295 80 292 73 Q286 68 280 74 Q284 65 278 60 Q272 65 270 73 Q265 82 260 92 Q257 99 255 108Z" fill="rgba(90,70,45,0.95)" stroke="rgba(160,130,90,0.7)" stroke-width="1.2"/>
-
-      <!-- Olho do dragão -->
-
-      <circle cx="282" cy="73" r="2.5" fill="rgba(255,80,30,0.8)"/>
-
-      <!-- Dentes do dragão -->
-
-      <path d="M285 82 L288 87 L291 82" stroke="rgba(200,180,150,0.7)" stroke-width="1" fill="none"/>
-
-      <!-- Cauda (popa) -->
-
-      <path d="M44 108 Q28 95 22 80 Q18 68 26 62 Q34 68 32 78 Q38 90 44 108Z" fill="rgba(90,70,45,0.95)" stroke="rgba(160,130,90,0.7)" stroke-width="1"/>
-
-      <!-- Espiral na cauda -->
-
-      <path d="M28 78 Q32 72 36 78 Q32 84 28 78" stroke="rgba(160,130,90,0.5)" stroke-width="1" fill="none"/>
-
-      <!-- Mastro -->
-
-      <line x1="150" y1="18" x2="150" y2="108" stroke="rgba(100,80,55,0.9)" stroke-width="3"/>
-
-      <!-- Travessa horizontal -->
-
-      <line x1="108" y1="36" x2="192" y2="36" stroke="rgba(100,80,55,0.8)" stroke-width="2"/>
-
-      <!-- Corda de tensão -->
-
-      <line x1="150" y1="18" x2="268" y2="108" stroke="rgba(120,100,70,0.4)" stroke-width="1"/>
-
-      <line x1="150" y1="18" x2="32" y2="108" stroke="rgba(120,100,70,0.4)" stroke-width="1"/>
-
-      <!-- Vela principal -->
-
-      <path d="M110 38 Q150 50 190 38 L188 94 Q150 104 112 94 Z" fill="rgba(120,25,25,0.85)" stroke="rgba(160,60,60,0.6)" stroke-width="1"/>
-
-      <!-- Listras da vela -->
-
-      <path d="M121 40 L119 93" stroke="rgba(80,15,15,0.6)" stroke-width="3"/>
-
-      <path d="M136 44 L134 98" stroke="rgba(80,15,15,0.5)" stroke-width="2"/>
-
-      <path d="M164 44 L166 98" stroke="rgba(80,15,15,0.5)" stroke-width="2"/>
-
-      <path d="M179 40 L181 93" stroke="rgba(80,15,15,0.6)" stroke-width="3"/>
-
-      <!-- Runa na vela -->
-
-      <text x="147" y="74" font-size="20" fill="rgba(220,180,100,0.7)" text-anchor="middle" font-family="serif">ᚠ</text>
-
-      <!-- Escudos lado esquerdo -->
-
-      <circle cx="80" cy="108" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-
-      <circle cx="110" cy="110" r="9" fill="rgba(40,40,80,0.8)" stroke="rgba(80,80,140,0.6)" stroke-width="1.2"/>
-
-      <circle cx="140" cy="110" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-
-      <circle cx="170" cy="110" r="9" fill="rgba(40,40,80,0.8)" stroke="rgba(80,80,140,0.6)" stroke-width="1.2"/>
-
-      <circle cx="200" cy="110" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-
-      <!-- Centro dos escudos -->
-
-      <circle cx="80" cy="108" r="3" fill="rgba(200,170,100,0.7)"/>
-
-      <circle cx="110" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-
-      <circle cx="140" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-
-      <circle cx="170" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-
-      <circle cx="200" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-
-      <!-- Remos -->
-
-      <line x1="80" y1="116" x2="65" y2="138" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-
-      <line x1="110" y1="118" x2="97" y2="140" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-
-      <line x1="170" y1="118" x2="181" y2="140" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-
-      <line x1="200" y1="116" x2="213" y2="138" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-
-      <!-- Pá dos remos -->
-
-      <ellipse cx="63" cy="140" rx="5" ry="3" transform="rotate(-30 63 140)" fill="rgba(100,80,55,0.6)"/>
-
-      <ellipse cx="95" cy="142" rx="5" ry="3" transform="rotate(-20 95 142)" fill="rgba(100,80,55,0.6)"/>
-
-      <ellipse cx="183" cy="142" rx="5" ry="3" transform="rotate(20 183 142)" fill="rgba(100,80,55,0.6)"/>
-
-      <ellipse cx="215" cy="140" rx="5" ry="3" transform="rotate(30 215 140)" fill="rgba(100,80,55,0.6)"/>
-
+      <path d="M30 110 Q80 130 150 132 Q220 130 268 110 L255 125 Q200 148 150 150 Q100 148 45 125 Z" fill="rgba(60,35,15,0.95)" stroke="rgba(120,80,50,0.6)" stroke-width="1.5"/>
+      <path d="M50 118 Q150 134 250 118" stroke="rgba(80,50,30,0.5)" stroke-width="1" fill="none"/>
+      <rect x="55" y="104" width="190" height="10" rx="2" fill="rgba(100,20,20,0.95)" stroke="rgba(140,40,40,0.5)" stroke-width="1"/>
+      <path d="M255 108 Q278 98 288 86 Q295 80 292 73 Q286 68 280 74 Q284 65 278 60 Q272 65 270 73 Q265 82 260 92 Q257 99 255 108Z" fill="rgba(80,20,10,0.95)"/>
+      <circle cx="282" cy="73" r="2.5" fill="rgba(255,200,50,0.9)"/>
+      <path d="M44 108 Q28 95 22 80 Q18 68 26 62 Q34 68 32 78 Q38 90 44 108Z" fill="rgba(80,20,10,0.95)"/>
+      <line x1="150" y1="18" x2="150" y2="108" stroke="rgba(60,30,10,0.9)" stroke-width="3"/>
+      <line x1="108" y1="36" x2="192" y2="36" stroke="rgba(60,30,10,0.8)" stroke-width="2"/>
+      <path d="M110 38 Q150 50 190 38 L188 94 Q150 104 112 94 Z" fill="rgba(100,15,15,0.9)"/>
+      <path d="M121 40 L119 93" stroke="rgba(50,8,8,0.7)" stroke-width="3"/>
+      <path d="M179 40 L181 93" stroke="rgba(50,8,8,0.7)" stroke-width="3"/>
+      <circle cx="80" cy="108" r="9" fill="rgba(200,180,140,0.9)" stroke="rgba(100,15,15,0.8)" stroke-width="1.5"/>
+      <circle cx="120" cy="110" r="9" fill="rgba(200,180,140,0.9)" stroke="rgba(20,30,100,0.8)" stroke-width="1.5"/>
+      <circle cx="160" cy="110" r="9" fill="rgba(200,180,140,0.9)" stroke="rgba(100,15,15,0.8)" stroke-width="1.5"/>
+      <circle cx="200" cy="110" r="9" fill="rgba(200,180,140,0.9)" stroke="rgba(20,30,100,0.8)" stroke-width="1.5"/>
     </svg>
-
   </div>
-
-
-
   <div class="ls-title">DRAKKAR</div>
-
   <div class="ls-sub">Mar do Norte · Matheus Lopes</div>
-
   <div class="prog-wrap"><div class="prog-fill" id="pf"></div></div>
-
   <div class="prog-txt" id="pt">AGUARDANDO TEMPESTADE...</div>
-
   <button id="play-btn" onclick="startGame()">⚔ &nbsp; ZARPAR</button>
-
   <div class="ls-hint">← → ↑ ↓ &nbsp;|&nbsp; WASD PARA NAVEGAR</div>
-
 </div>
-
-
-
-<!-- CANVAS -->
 
 <canvas id="c"></canvas>
-
 <div class="vig"></div>
-
 <div id="flash"></div>
 
-
-
-<!-- HUD -->
-
 <div id="hud">
-
   <div class="hud-back"><a href="https://portifolio-matheus-murex.vercel.app" target="_blank">← PORTFÓLIO</a></div>
-
-  <div class="hud-mid">
-
-    <div class="hud-name">MATHEUS LOPES</div>
-
-    <div class="hud-coord" id="coord">63°12'N · 17°08'W</div>
-
-  </div>
-
+  <div class="hud-mid"><div class="hud-name">MATHEUS LOPES</div><div class="hud-coord" id="coord">63°12'N · 17°08'W</div></div>
   <div class="hud-right">AUTOMAÇÃO · IA · N8N<br><span style="color:rgba(180,200,255,.3)">NAVEGANDO</span></div>
-
 </div>
-
-
-
-<!-- SPEED -->
-
-<div id="speedbar">
-
-  <div class="spd-label">VELOCIDADE</div>
-
-  <div class="spd-track"><div class="spd-fill" id="sf"></div></div>
-
-</div>
-
-
-
-<!-- CONTROLS -->
-
+<div id="speedbar"><div class="spd-label">VELOCIDADE</div><div class="spd-track"><div class="spd-fill" id="sf"></div></div></div>
 <div id="ctrl">
-
   <div class="key"><div class="key-k">←</div><div class="key-l">Esq</div></div>
-
   <div class="key"><div class="key-k">↑</div><div class="key-l">Frente</div></div>
-
   <div class="key"><div class="key-k">↓</div><div class="key-l">Ré</div></div>
-
   <div class="key"><div class="key-k">→</div><div class="key-l">Dir</div></div>
-
 </div>
-
-
-
-<!-- MOBILE -->
-
 <div id="mctrl">
-
-  <div class="mbtn" id="ml">←</div>
-
-  <div class="mbtn" id="mu">↑</div>
-
-  <div class="mbtn" id="md">↓</div>
-
-  <div class="mbtn" id="mr">→</div>
-
+  <div class="mbtn" id="ml">←</div><div class="mbtn" id="mu">↑</div>
+  <div class="mbtn" id="md">↓</div><div class="mbtn" id="mr">→</div>
 </div>
-
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <script>
-
-// ---
-
-// LOADING SCREEN
-
-// ---
-
-// Relâmpagos decorativos
-
-const sb = document.getElementById('stormBg');
-
+// ── LOADING ──
+const sb=document.getElementById('stormBg');
 for(let i=0;i<8;i++){
-
-  const b=document.createElement('div');
-
-  b.className='bolt';
-
+  const b=document.createElement('div');b.className='bolt';
   b.style.left=Math.random()*100+'vw';
-
   b.style.animationDuration=(3+Math.random()*5)+'s';
-
   b.style.animationDelay=(-Math.random()*8)+'s';
-
   b.style.opacity=0.4+Math.random()*0.6;
-
   sb.appendChild(b);
-
 }
-
-
-
-const steps=[
-
+const STEPS=[
   {p:12,t:'INVOCANDO A TEMPESTADE...'},
-
   {p:28,t:'CONSTRUINDO O DRAKKAR...'},
-
   {p:46,t:'GERANDO AS ONDAS...'},
-
   {p:63,t:'FORJANDO OS TROVÕES...'},
-
   {p:80,t:'ACORDANDO OS GUERREIROS...'},
-
   {p:95,t:'IÇANDO AS VELAS...'},
-
   {p:100,t:'QUE ODIN NOS GUIE'},
-
 ];
-
 let si=0;
-
-const pf=document.getElementById('pf');
-
-const pt=document.getElementById('pt');
-
-const pb=document.getElementById('play-btn');
-
 function advance(){
-
-  if(si>=steps.length)return;
-
-  const s=steps[si++];
-
-  pf.style.width=s.p+'%';
-
-  pt.textContent=s.t;
-
-  if(s.p===100){setTimeout(()=>{pb.style.display='block'},500);}
-
+  if(si>=STEPS.length)return;
+  const s=STEPS[si++];
+  document.getElementById('pf').style.width=s.p+'%';
+  document.getElementById('pt').textContent=s.t;
+  if(s.p===100)setTimeout(()=>document.getElementById('play-btn').style.display='block',500);
   else setTimeout(advance,400+Math.random()*500);
-
 }
-
 setTimeout(advance,200);
 
-
-
-// ---
-
-// THREE.JS
-
-// ---
-
+// ── ENGINE ──
 let scene,camera,renderer,clock;
-
-let waterMesh,waterGeo;
-
+let waterGeo,waterMesh;
 let boatGroup,sailMesh,oarGroups=[];
+let wakes=[],clouds=[];
+let ltTimer=0;
+// boatAngle=0 means bow points toward +X
+// camera offset is diagonal, so starting angle looks good
+let boatSpeed=0, boatAngle=0;
+let running=false;
+const K={l:false,r:false,u:false,d:false};
 
-let wakes=[];
+// WAVE amplitude kept small so boat always floats on top
+const WAVE_AMP = 0.9;
+// Boat hull bottom in local space ≈ -1.5, so base world Y = WAVE_AMP+1.5+margin
+const BOAT_BASE_Y = WAVE_AMP + 1.8;
 
-let lightningMeshes=[];
+// Camera: far isometric
+const CAM_D = 90;
 
-let stormClouds=[];
-
-let boatSpeed=0, boatAngle=Math.PI;
-
-let gameRunning=false;
-
-const keys={left:false,right:false,up:false,down:false};
-
-
-
-// ── INIT ──
-
-function initThree(){
-
-  const canvas=document.getElementById('c');
-
-  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-
-  renderer.setSize(window.innerWidth,window.innerHeight);
-
+function init(){
+  const cv=document.getElementById('c');
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=true;
-
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-
-  renderer.toneMappingExposure=1.2;
-
-
+  renderer.toneMappingExposure=1.1;
 
   scene=new THREE.Scene();
-
-  // Céu cinza tempestuoso
-
-  scene.background=new THREE.Color(0x6a8aaa);
-
-  scene.fog=null;
-
-
-
+  scene.background=new THREE.Color(0x5a7a99);
+  scene.fog=new THREE.FogExp2(0x6a8aaa,0.0012);
   clock=new THREE.Clock();
 
-
-
-  // Câmera isométrica
-
-  const aspect=window.innerWidth/window.innerHeight;
-
-  const d=30;
-
-  camera=new THREE.OrthographicCamera(-d*aspect,d*aspect,d,-d,0.1,1000);
-
-  camera.position.set(50,50,50);
-
+  const a=innerWidth/innerHeight;
+  camera=new THREE.OrthographicCamera(-CAM_D*a,CAM_D*a,CAM_D,-CAM_D,0.1,2000);
+  // isometric angle: camera sits at 45° diagonal, looking down at ~35°
+  camera.position.set(CAM_D,CAM_D*0.6,CAM_D);
   camera.lookAt(0,0,0);
-
-  camera.zoom=1.5;
-
+  camera.zoom=0.75;
   camera.updateProjectionMatrix();
 
-
-
-  buildLights();
-
-  buildSky();
-
-  buildWater();
-
+  mkLights();
+  mkSky();
+  mkWater();
   mkBoat();
-
-  buildClouds();
-
-
-
+  mkClouds();
   window.addEventListener('resize',onResize);
-
 }
 
-
-
-function buildLights(){
-
-  // Luz ambiente forte para tirar o "breu"
-
-  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-
-
-
-  // Luz direcional (O Sol)
-
-  const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
-
-  sunLight.position.set(10, 20, 10);
-
-  sunLight.castShadow = true;
-
-  scene.add(sunLight);
-
-
-
-  // Luz pontual focada no barco para dar brilho na madeira
-
-  const pointLight = new THREE.PointLight(0xffffff, 2, 50);
-
-  pointLight.position.set(0, 5, 0);
-
-  scene.add(pointLight);
-
+function mkLights(){
+  scene.add(new THREE.AmbientLight(0xffffff,1.3));
+  const sun=new THREE.DirectionalLight(0xfff0dd,2.2);
+  sun.position.set(40,70,30);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.left=-120;
+  sun.shadow.camera.right=120;
+  sun.shadow.camera.top=120;
+  sun.shadow.camera.bottom=-120;
+  sun.shadow.camera.far=500;
+  scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x8899cc,0.8);
+  fill.position.set(-30,20,-40);
+  scene.add(fill);
 }
 
-
-
-function buildSky(){
-
-  // Gradiente de céu em dome
-
-  const skyGeo=new THREE.SphereGeometry(400,24,12);
-
-  const skyMat=new THREE.ShaderMaterial({
-
+function mkSky(){
+  const geo=new THREE.SphereGeometry(600,20,12);
+  const mat=new THREE.ShaderMaterial({
     side:THREE.BackSide,
-
-    uniforms:{
-
-      topColor:{value:new THREE.Color(0x5580aa)},
-
-      bottomColor:{value:new THREE.Color(0xaabbc8)},
-
-      offset:{value:20},
-
-      exponent:{value:0.4},
-
-    },
-
-    vertexShader:`
-
-      varying vec3 vWorldPos;
-
-      void main(){vWorldPos=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
-
-    `,
-
-    fragmentShader:`
-
-      uniform vec3 topColor,bottomColor;uniform float offset,exponent;
-
-      varying vec3 vWorldPos;
-
-      void main(){float h=normalize(vWorldPos+offset).y;gl_FragColor=vec4(mix(bottomColor,topColor,max(pow(max(h,0.0),exponent),0.0)),1.0);}
-
-    `,
-
+    uniforms:{T:{value:new THREE.Color(0x2e4a72)},B:{value:new THREE.Color(0x8aacbe)}},
+    vertexShader:`varying vec3 vP;void main(){vP=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform vec3 T,B;varying vec3 vP;void main(){float h=clamp(normalize(vP).y*.5+.5,0.,1.);gl_FragColor=vec4(mix(B,T,h),1.);}`,
   });
-
-  scene.add(new THREE.Mesh(skyGeo,skyMat));
-
+  scene.add(new THREE.Mesh(geo,mat));
 }
 
-
-
-function buildWater(){
-
-  waterGeo=new THREE.PlaneGeometry(600,600,140,140);
-
-  const waterMat=new THREE.MeshStandardMaterial({
-
-    color:0x4a7a9b,
-
+function mkWater(){
+  // High-res geometry for visible wave detail
+  waterGeo=new THREE.PlaneGeometry(900,900,160,160);
+  const mat=new THREE.MeshStandardMaterial({
+    color:0x1e4f6e,
     roughness:0.08,
-
-    metalness:0.85,
-
-    envMapIntensity:1.2,
-
+    metalness:0.8,
   });
-
-  waterMesh=new THREE.Mesh(waterGeo,waterMat);
-
+  waterMesh=new THREE.Mesh(waterGeo,mat);
   waterMesh.rotation.x=-Math.PI/2;
-
+  waterMesh.position.y=0;
   waterMesh.receiveShadow=true;
-
   scene.add(waterMesh);
 
-
-
-  // Cristas de ondas — linhas brancas
-
-  for(let i=0;i<18;i++){
-
-    const w=new THREE.PlaneGeometry(8+Math.random()*20,0.6);
-
-    const wm=new THREE.MeshBasicMaterial({color:0xaabbcc,transparent:true,opacity:.18+Math.random()*.12});
-
+  // Foam crests — visible white lines on water surface
+  for(let i=0;i<30;i++){
+    const w=new THREE.PlaneGeometry(10+Math.random()*25,0.5+Math.random()*0.4);
+    const wm=new THREE.MeshBasicMaterial({color:0xddeeff,transparent:true,opacity:.22+Math.random()*.18});
     const wv=new THREE.Mesh(w,wm);
-
     wv.rotation.x=-Math.PI/2;
-
     wv.rotation.z=Math.random()*Math.PI;
-
-    wv.position.set((Math.random()-.5)*400,(Math.random()-.5)*400,0.12);
-
-    // usar position em espaço do plano — rotacionado
-
-    wv.position.set((Math.random()-.5)*400,.15,(Math.random()-.5)*400);
-
-    wv.userData={speed:0.3+Math.random()*.4,phase:Math.random()*Math.PI*2};
-
+    wv.position.set((Math.random()-.5)*600,0.2,(Math.random()-.5)*600);
+    wv.userData={spd:0.4+Math.random()*.6};
     scene.add(wv);
-
-    stormClouds.push({mesh:wv,type:'wave'});
-
+    clouds.push({mesh:wv,type:'foam'});
   }
-
 }
 
-
+// ── WAVE HEIGHT FUNCTION (same formula used in loop & for boat Y) ──
+function waveH(x,z,t){
+  return (
+    Math.sin(x*0.10+t*1.0)*WAVE_AMP*0.55 +
+    Math.sin(z*0.08+t*0.75)*WAVE_AMP*0.50 +
+    Math.sin((x+z)*0.06+t*1.3)*WAVE_AMP*0.30 +
+    Math.sin(x*0.18+t*1.7)*WAVE_AMP*0.18 +
+    Math.cos(z*0.14+t*0.9)*WAVE_AMP*0.15
+  );
+}
 
 // ── LOWPOLY BOAT ──
-
+// Boat local coords:
+//   +X = BOW (dragon head) — this is the FORWARD direction
+//   -X = STERN (tail)
+//   +Y = up
+//   mastro vertical along Y, centered at (0,Y,0)
 function mkBoat(){
+  boatGroup=new THREE.Group();
 
-  boatGroup = new THREE.Group();
+  function M(c,ds){
+    return new THREE.MeshStandardMaterial({
+      color:c,roughness:0.95,metalness:0.0,flatShading:true,
+      side:ds?THREE.DoubleSide:THREE.FrontSide
+    });
+  }
 
-  
+  // COLORS — brown hull, dark wine red accents
+  const hullBrown = M(0x5a2e0c);   // dark brown hull
+  const dkBrown   = M(0x3a1a06);   // very dark brown
+  const wineRed   = M(0x6e1010);   // dark wine red for deck/accents
+  const sailWine  = M(0x701515,true); // wine sail
+  const sailCream = M(0xd8d0b8,true); // cream sail panel
+  const shCream   = M(0xddd5b8);   // shield face
+  const shRed     = M(0x6e1010);   // shield cross red
+  const shBlue    = M(0x142066);   // shield cross blue
+  const eyeGlow   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2.5,flatShading:true});
 
-  function mat(c,ds){return new THREE.MeshStandardMaterial({color:c,roughness:1,metalness:0,flatShading:true,side:ds?THREE.DoubleSide:THREE.FrontSide});}
+  // ── HULL — custom trapezoid, bow along +X ──
+  const lx=5.5, bz=2.2, th=1.4, tp=0.6;
+  const hGeo=new THREE.BufferGeometry();
+  const hV=new Float32Array([
+    // top face
+    -lx, th,-bz,   lx, th,-bz,   lx, th, bz,  -lx, th, bz,
+    // bottom face (tapered)
+    -lx+tp,-th,-bz+tp,  lx-tp,-th,-bz+tp,  lx-tp,-th, bz-tp,  -lx+tp,-th, bz-tp,
+  ]);
+  const hI=[0,2,1,0,3,2, 4,5,6,4,6,7, 0,1,5,0,5,4, 2,3,7,2,7,6, 0,4,7,0,7,3, 1,2,6,1,6,5];
+  hGeo.setAttribute('position',new THREE.BufferAttribute(hV,3));
+  hGeo.setIndex(hI);
+  hGeo.computeVertexNormals();
+  boatGroup.add(Object.assign(new THREE.Mesh(hGeo,hullBrown),{castShadow:true,receiveShadow:true}));
 
-  function add(parent,geo,m,x,y,z){const mesh=new THREE.Mesh(geo,m);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;}
+  // Keel strip
+  function add(g,x,y,z){const m=new THREE.Mesh(g,dkBrown);m.position.set(x,y,z);m.castShadow=true;boatGroup.add(m);return m;}
+  add(new THREE.BoxGeometry(11.2,0.3,0.8),0,-th-0.05,0);
 
-  
+  // Deck slab — wine red
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(10.5,0.4,3.6),wineRed);
+  deck.position.set(0,th+0.0,0);deck.castShadow=true;boatGroup.add(deck);
 
-  const brown  = mat(0x7a3a18);
-
-  const dkBrown= mat(0x4a200a);
-
-  const red    = mat(0xb02818);
-
-  const redSail= mat(0xaa2018,true);
-
-  const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00,emissiveIntensity:2,flatShading:true});
-
-  
-
-  // Hull - Agora passando parâmetros para o novo comprimento (12.0)
-
-  const hull = mkHull(brown, 12.0, 2.5, 1.8, 0.55);
-
-  boatGroup.add(hull);
-
-  
-
-  // Deck - Aumentado para 22.0 de comprimento para cobrir o casco longo
-
-  add(boatGroup, new THREE.BoxGeometry(22.0, 0.45, 3.8), red, 0, 1.6, 0);
-
-  
-
-  // Mastro
-
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.18,10,6), dkBrown);
-
-  mast.position.set(0, 6.0, 0);
-
+  // ── MAST — vertical, centered on deck ──
+  // CylinderGeometry(radiusTop, radiusBottom, height, segments)
+  // aligned along Y axis by default — this is CORRECT (vertical)
+  const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.20,11,6),dkBrown);
+  mast.position.set(0,th+0.4+5.5,0); // bottom of mast sits on deck
+  mast.castShadow=true;
   boatGroup.add(mast);
 
+  // Yard (horizontal beam across mast, along Z)
+  const yard=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,8.0,6),dkBrown);
+  yard.rotation.x=Math.PI/2; // rotate so cylinder lies along Z
+  yard.position.set(0,th+0.4+9.8,0);
+  boatGroup.add(yard);
 
+  // Masthead cap
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),dkBrown);
+  cap.position.set(0,th+0.4+11.2,0);
+  boatGroup.add(cap);
 
-  // Vela
+  // ── SAIL: 3 panels along Z, hanging from yard ──
+  // Panel height=6, width=2.4 each
+  const PH=6.2, PW=2.55;
+  [[-PW,sailWine],[0,sailCream],[PW,sailWine]].forEach(([z,mat])=>{
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(PW-0.05,PH),mat);
+    // Panels lie in XZ plane, facing forward (+X), hanging from yard
+    s.rotation.y=Math.PI/2; // face along X axis
+    s.position.set(0,th+0.4+9.8-PH/2,z);
+    boatGroup.add(s);
+  });
+  sailMesh=boatGroup.children[boatGroup.children.length-1];
 
-  const sail = new THREE.Mesh(new THREE.PlaneGeometry(6, 8), redSail);
+  // Ropes from yard ends to hull corners
+  [[-3.8,0],[3.8,0]].forEach(([z,_])=>{
+    const start=new THREE.Vector3(0,th+0.4+9.8,z);
+    const end=new THREE.Vector3(z>0?4.5:-4.5,th+0.6,z>0?2.0:-2.0);
+    const dir=new THREE.Vector3().subVectors(end,start);
+    const len=dir.length();
+    const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,len,4),dkBrown);
+    const mid=new THREE.Vector3().addVectors(start,end).multiplyScalar(0.5);
+    rope.position.copy(mid);
+    rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+    boatGroup.add(rope);
+  });
 
-  sail.position.set(0, 7, 0.1);
+  // ── BOW dragon head — at +X end ──
+  // Neck (slightly angled upward)
+  const neck=new THREE.Mesh(new THREE.BoxGeometry(0.65,2.4,0.65),wineRed);
+  neck.position.set(5.8,th+1.0,0);neck.rotation.z=-0.35;boatGroup.add(neck);
+  // Head block
+  const hd=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.85,0.85),wineRed);
+  hd.position.set(6.6,th+2.4,0);hd.rotation.z=-0.2;boatGroup.add(hd);
+  // Snout
+  const sn=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.45,0.55),wineRed);
+  sn.position.set(7.5,th+2.1,0);boatGroup.add(sn);
+  // Jaw lower
+  const jaw=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.22,0.42),dkBrown);
+  jaw.position.set(7.4,th+1.75,0);boatGroup.add(jaw);
+  // Eye
+  const eye=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.22,0.1),eyeGlow);
+  eye.position.set(6.95,th+2.55,0.44);boatGroup.add(eye);
+  // Horn
+  const horn=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.16,0.85,4),dkBrown);
+  horn.position.set(6.5,th+3.35,0);horn.rotation.z=0.2;boatGroup.add(horn);
 
-  boatGroup.add(sail);
+  // ── STERN tail — at -X end ──
+  const st1=new THREE.Mesh(new THREE.BoxGeometry(0.65,2.0,0.6),wineRed);
+  st1.position.set(-5.8,th+1.0,0);st1.rotation.z=0.35;boatGroup.add(st1);
+  const st2=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.6,0.5),wineRed);
+  st2.position.set(-6.3,th+2.5,0);st2.rotation.z=0.65;boatGroup.add(st2);
 
-  sailMesh = sail;
-
-
-
-  // ── CABEÇA DE DRAGÃO (PROA) - Reposicionada para a nova frente (12.5) ──
-
-  const neck = add(boatGroup, new THREE.BoxGeometry(0.6, 2.8, 0.6), red, 11.5, 2.0, 0);
-
-  neck.rotation.z = -0.35;
-
-  
-
-  const head = add(boatGroup, new THREE.BoxGeometry(1.6, 0.9, 0.9), red, 12.5, 3.3, 0);
-
-  head.rotation.z = -0.2;
-
-  
-
-  add(boatGroup, new THREE.BoxGeometry(1.2, 0.5, 0.6), red, 13.5, 3.0, 0); // Focinho
-
-  add(boatGroup, new THREE.BoxGeometry(0.25, 0.25, 0.1), eyeM, 13.05, 3.4, 0.4); // Olho
-
-  
-
-  // ── CAUDA (POPA) - Reposicionada para o novo fundo (-11.5) ──
-
-  const tail = add(boatGroup, new THREE.BoxGeometry(0.6, 2.2, 0.6), red, -11.5, 2.1, 0);
-
-  tail.rotation.z = 0.35;
-
-
-
-  boatGroup.position.set(0, 1.4, 0);
-
-  scene.add(boatGroup);
-
-}
-
-
-
-// ── HULL (CASCO) DINÂMICO ──
-
-function mkHull(mat, lx = 4.8, bz = 2.1, th = 1.2, taper = 0.55){
-
-  const geo = new THREE.BufferGeometry();
-
-  // lx agora é dinâmico, permitindo o barco ser longo
-
-  const vertices = new Float32Array([
-
-    -lx, th,-bz,  lx, th,-bz,  lx, th, bz,  -lx, th, bz,
-
-    -lx+taper,-th,-bz+taper,  lx-taper,-th,-bz+taper,  lx-taper,-th, bz-taper,  -lx+taper,-th, bz-taper,
-
-  ]);
-
-  const indices = [
-
-    0,2,1, 0,3,2, 4,5,6, 4,6,7, 0,1,5, 0,5,4, 2,3,7, 2,7,6, 0,4,7, 0,7,3, 1,2,6, 1,6,5
-
-  ];
-
-  geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-
-  geo.setIndex(indices);
-
-  geo.computeVertexNormals();
-
-  return new THREE.Mesh(geo, mat);
-
-}
-
-function buildClouds(){
-
-  // Nuvens de tempestade escuras
-
-  for(let i=0;i<16;i++){
-
-    const grp=new THREE.Group();
-
-    const n=3+Math.floor(Math.random()*4);
-
-    for(let j=0;j<n;j++){
-
-      const r=6+Math.random()*8;
-
-      const geo=new THREE.SphereGeometry(r,8,6);
-
-      const mat=new THREE.MeshStandardMaterial({
-
-        color:new THREE.Color().setHSL(0,.0,.65+Math.random()*.2),
-
-        roughness:1,transparent:true,opacity:.55+Math.random()*.2,
-
+  // ── SHIELDS along both sides (Z+ and Z-) ──
+  [-3.5,-1.75,0,1.75,3.5].forEach((x,i)=>{
+    [1,-1].forEach(z=>{
+      const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.56,0.56,0.12,8),shCream);
+      sh.rotation.x=Math.PI/2;sh.position.set(x,th+0.05,z*2.05);boatGroup.add(sh);
+      const m2=i%2===0?shRed:shBlue;
+      [new THREE.BoxGeometry(0.72,0.12,0.12),new THREE.BoxGeometry(0.12,0.12,0.72)].forEach(g=>{
+        const c=new THREE.Mesh(g,m2);c.position.set(x,th+0.12,z*2.05);boatGroup.add(c);
       });
+    });
+  });
 
-      const m=new THREE.Mesh(geo,mat);
+  // ── OARS ──
+  oarGroups=[];
+  [-3.5,-1.0,1.5].forEach(x=>{
+    [-1,1].forEach(z=>{
+      const g=new THREE.Group();
+      const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.065,5.0,5),dkBrown);
+      sh.rotation.z=z*0.55;sh.rotation.x=0.18;
+      const bl=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.85,0.32),hullBrown);
+      bl.position.set(z*1.8,-2.2,z*0.75);
+      g.add(sh);g.add(bl);
+      g.position.set(x,th-0.2,z*2.2);
+      g.userData={ph:Math.random()*Math.PI*2,s:z};
+      boatGroup.add(g);oarGroups.push(g);
+    });
+  });
 
-      m.scale.y=.35+Math.random()*.2;
+  // Warm boat light
+  const bl=new THREE.PointLight(0xfff0cc,6,40);
+  bl.position.set(0,8,0);
+  boatGroup.add(bl);
 
-      m.position.set((Math.random()-.5)*18,(Math.random()-.5)*4,(Math.random()-.5)*12);
-
-      grp.add(m);
-
-    }
-
-    grp.position.set((Math.random()-.5)*300,55+Math.random()*30,(Math.random()-.5)*300);
-
-    grp.userData={speed:0.5+Math.random()*.5,drift:(Math.random()-.5)*.002};
-
-    scene.add(grp);
-
-    stormClouds.push({mesh:grp,type:'cloud'});
-
-  }
-
+  // Position: Y will be set in loop riding waves
+  boatGroup.position.set(0,BOAT_BASE_Y,0);
+  scene.add(boatGroup);
 }
 
-
+function mkClouds(){
+  // More clouds — 28 total
+  for(let i=0;i<28;i++){
+    const g=new THREE.Group();
+    const n=3+Math.floor(Math.random()*5);
+    for(let j=0;j<n;j++){
+      const r=5+Math.random()*9;
+      const m=new THREE.Mesh(
+        new THREE.SphereGeometry(r,6,4),
+        new THREE.MeshStandardMaterial({
+          color:new THREE.Color().setHSL(0.58,0.04,0.50+Math.random()*.2),
+          roughness:1,transparent:true,opacity:.45+Math.random()*.3,flatShading:true
+        })
+      );
+      m.scale.y=0.25+Math.random()*.18;
+      m.position.set((Math.random()-.5)*22,(Math.random()-.5)*4,(Math.random()-.5)*14);
+      g.add(m);
+    }
+    g.position.set((Math.random()-.5)*700,55+Math.random()*35,(Math.random()-.5)*700);
+    g.userData={spd:0.3+Math.random()*.6,type:'cloud'};
+    scene.add(g);
+    clouds.push({mesh:g,type:'cloud'});
+  }
+}
 
 // ── WAKE ──
-
-const wakeMat=new THREE.MeshBasicMaterial({color:0x8899aa,transparent:true,opacity:.3,side:THREE.DoubleSide});
-
 function spawnWake(x,z){
-
-  const geo=new THREE.PlaneGeometry(.8,.8);
-
-  const m=new THREE.Mesh(geo,wakeMat.clone());
-
+  const m=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2,1.2),
+    new THREE.MeshBasicMaterial({color:0x99bbcc,transparent:true,opacity:.4,side:THREE.DoubleSide})
+  );
   m.rotation.x=-Math.PI/2;
-
-  m.position.set(x+(Math.random()-.5)*2,.12,z+(Math.random()-.5)*2);
-
+  m.position.set(x+(Math.random()-.5)*1.5,0.15,z+(Math.random()-.5)*1.5);
   m.userData.life=1;
-
   scene.add(m);wakes.push(m);
-
 }
 
-
-
-// ── LIGHTNING (relâmpago 3D) ──
-
-function triggerLightning(){
-
+// ── LIGHTNING — more frequent, bigger flash ──
+function doLightning(){
   const fl=document.getElementById('flash');
+  // double flash effect
+  fl.style.transition='opacity .04s';
+  fl.style.opacity='.22';
+  setTimeout(()=>{fl.style.opacity='0';},70);
+  setTimeout(()=>{fl.style.opacity='.14';},130);
+  setTimeout(()=>{fl.style.opacity='0';},190);
 
-  fl.style.opacity='.18';
-
-  setTimeout(()=>fl.style.opacity='0',80);
-
-  // Ponto de luz rápido
-
-  const l=new THREE.PointLight(0xaabbff,20,200);
-
-  l.position.set((Math.random()-.5)*200,80,(Math.random()-.5)*200);
-
+  // bright point light
+  const l=new THREE.PointLight(0xbbccff,80,400);
+  l.position.set((Math.random()-.5)*300,100,(Math.random()-.5)*300);
   scene.add(l);
-
-  setTimeout(()=>scene.remove(l),120);
-
+  setTimeout(()=>scene.remove(l),200);
+  // secondary bolt
+  setTimeout(()=>{
+    const l2=new THREE.PointLight(0xaabbff,50,300);
+    l2.position.set((Math.random()-.5)*200,90,(Math.random()-.5)*200);
+    scene.add(l2);
+    setTimeout(()=>scene.remove(l2),100);
+  },140);
 }
 
-
-
-// ---
-
-// GAME LOOP
-
-// ---
-
-let lightningTimer=0;
-
-
-
+// ── GAME LOOP ──
 function loop(){
-
-  if (!gameRunning || !boatGroup) return;
-
+  if(!running||!boatGroup)return;
   requestAnimationFrame(loop);
-
-  renderer.render(scene, camera);
-
-  const dt=clock.getDelta();
-
+  const dt=Math.min(clock.getDelta(),0.05);
   const t=clock.getElapsedTime();
 
-
-
-  // ── Água (ondas) ──
-
+  // ── WATER WAVES — more visible, higher amplitude ──
   const pos=waterGeo.attributes.position;
-
   for(let i=0;i<pos.count;i++){
-
-    const x=pos.getX(i),y=pos.getY(i);
-
-    const h=
-
-      Math.sin(x*.08+t*.9)*1.1+
-
-      Math.sin(y*.06+t*.7)*0.9+
-
-      Math.sin((x+y)*.05+t*1.2)*0.6+
-
-      Math.sin(x*.15+t*1.5)*.35;
-
-    pos.setZ(i,h);
-
+    const wx=pos.getX(i),wz=pos.getY(i); // Y here is the Z-axis of the plane before rotation
+    pos.setZ(i,waveH(wx,wz,t)*1.8); // scale up for visual impact
   }
-
   pos.needsUpdate=true;
-
   waterGeo.computeVertexNormals();
 
+  // ── BOAT MOVEMENT — boatAngle=0 → bow faces +X ──
+  const MAX=20,ACC=14,FRIC=5.5,TURN=1.8;
+  if(K.u) boatSpeed=Math.min(boatSpeed+ACC*dt,MAX);
+  if(K.d) boatSpeed=Math.max(boatSpeed-ACC*dt*2.0,-MAX*0.35);
+  if(!K.u&&!K.d){boatSpeed*=Math.pow(1-FRIC*dt,1);if(Math.abs(boatSpeed)<0.05)boatSpeed=0;}
+  const tf=0.15+Math.abs(boatSpeed)/MAX*0.85;
+  if(K.l) boatAngle+=TURN*dt*tf;
+  if(K.r) boatAngle-=TURN*dt*tf;
 
-
-  // ── Nuvens ──
-
-  stormClouds.forEach(c=>{
-
-    if(c.type==='cloud'){
-
-      c.mesh.position.x+=c.mesh.userData.speed*dt*1.5;
-
-      if(c.mesh.position.x>300)c.mesh.position.x=-300;
-
-    }
-
-    if(c.type==='wave'){
-
-      c.mesh.position.x+=.4*dt;
-
-      if(c.mesh.position.x>300)c.mesh.position.x=-300;
-
-    }
-
-  });
-
-
-
-  // ── Relâmpago aleatório ──
-
-  lightningTimer-=dt;
-
-  if(lightningTimer<=0){
-
-    triggerLightning();
-
-    lightningTimer=4+Math.random()*8;
-
-  }
-
-
-
-  // ── Movimento do barco ──
-
-  const maxSpd=18,acc=10,fric=4.5,turn=1.5;
-
-  if(keys.up)   boatSpeed=Math.min(boatSpeed+acc*dt,maxSpd);
-
-  if(keys.down) boatSpeed=Math.max(boatSpeed-acc*dt*1.6,-maxSpd*.35);
-
-  if(!keys.up&&!keys.down) boatSpeed+=(0-boatSpeed)*fric*dt;
-
-  if(keys.left) boatAngle+=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
-
-  if(keys.right)boatAngle-=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
-
-
-
-  const dx=Math.sin(boatAngle)*boatSpeed*dt;
-
-  const dz=Math.cos(boatAngle)*boatSpeed*dt;
-
+  // Movement direction: bow is along +X in local space
+  const dx=Math.cos(boatAngle)*boatSpeed*dt;
+  const dz=-Math.sin(boatAngle)*boatSpeed*dt;
   boatGroup.position.x+=dx;
-
   boatGroup.position.z+=dz;
 
+  // ── BOAT RIDES WAVES — always above water ──
+  const bx=boatGroup.position.x, bz2=boatGroup.position.z;
+  const wh=waveH(bx,bz2,t);
+  // Hull bottom at local y≈-1.4, so world bottom = boatGroup.y - 1.4
+  // Keep bottom at wave height + small margin
+  boatGroup.position.y = wh + BOAT_BASE_Y;
 
+  // Rock with wave gradient (slope)
+  const dzdx=(waveH(bx+0.8,bz2,t)-waveH(bx-0.8,bz2,t))/1.6;
+  const dzdz=(waveH(bx,bz2+0.8,t)-waveH(bx,bz2-0.8,t))/1.6;
+  boatGroup.rotation.z = -dzdx*0.18 + (K.l?.06:K.r?-.06:0);
+  boatGroup.rotation.x =  dzdz*0.18 + (boatSpeed/MAX)*0.04;
+  // Y rotation = heading (boatAngle). bow along +X, so rotation.y = angle
+  boatGroup.rotation.y = boatAngle;
 
-  // Bob & roll
-
-  boatGroup.position.y = Math.sin(t * 1.1) * 0.28;
-
-  boatGroup.rotation.z=Math.sin(t*.9)*.032+(keys.left?.055:keys.right?-.055:0);
-
-  boatGroup.rotation.x=Math.sin(t*.65)*.022+(boatSpeed/maxSpd)*.04;
-
-  boatGroup.rotation.y= Math.PI / 2;
-
-
-
-  // Animação dos remos
-
-  oarGroups.forEach(og=>{
-
-    og.rotation.x=Math.sin(t*2.2+og.userData.phase)*0.35*(boatSpeed/maxSpd+.3)*og.userData.side;
-
+  // Oars
+  oarGroups.forEach(o=>{
+    o.rotation.x=Math.sin(t*2.5+o.userData.ph)*0.38*(Math.abs(boatSpeed)/MAX+.2)*o.userData.s;
   });
 
+  // Sail flutter
+  if(sailMesh) sailMesh.rotation.z=Math.sin(t*.65)*.025;
 
+  // Foam crests drift
+  clouds.forEach(c=>{
+    if(c.type==='cloud'){
+      c.mesh.position.x+=c.mesh.userData.spd*dt*1.8;
+      if(c.mesh.position.x>500)c.mesh.position.x=-500;
+    }
+    if(c.type==='foam'){
+      c.mesh.position.x+=c.mesh.userData.spd*dt*2.5;
+      if(c.mesh.position.x>500)c.mesh.position.x=-500;
+      // also ride wave surface
+      c.mesh.position.y=waveH(c.mesh.position.x,c.mesh.position.z,t)*1.8+0.18;
+    }
+  });
 
-  // Vela balança levemente
+  // Lightning — more frequent
+  ltTimer-=dt;
+  if(ltTimer<=0){doLightning();ltTimer=2.5+Math.random()*6;}
 
-  if(sailMesh) sailMesh.rotation.y=Math.sin(t*.6)*.04;
-
-
-
-  // ── Wake ──
-
-  if(Math.abs(boatSpeed)>1&&Math.random()<.4){
-
-    spawnWake(boatGroup.position.x-dx*4,boatGroup.position.z-dz*4);
-
+  // Wakes
+  if(Math.abs(boatSpeed)>0.5&&Math.random()<.35){
+    spawnWake(boatGroup.position.x-dx*3,boatGroup.position.z-dz*3);
   }
-
   for(let i=wakes.length-1;i>=0;i--){
-
     const w=wakes[i];
-
-    w.userData.life-=dt*.7;
-
-    w.material.opacity=w.userData.life*.3;
-
-    w.scale.setScalar(1+(1-w.userData.life)*4);
-
+    w.userData.life-=dt*.65;
+    w.material.opacity=w.userData.life*.4;
+    w.scale.setScalar(1+(1-w.userData.life)*5);
     if(w.userData.life<=0){scene.remove(w);wakes.splice(i,1);}
-
   }
 
-
-
-  // ── Câmera isométrica segue barco ──
-
-  const cx=boatGroup.position.x,cz=boatGroup.position.z;
-
-  camera.position.x+=(cx+50-camera.position.x)*6*dt;
-
-  camera.position.y+=(50-camera.position.y)*4*dt;
-
-  camera.position.z+=(cz+50-camera.position.z)*6*dt;
-
-  camera.lookAt(cx,boatGroup.position.y,cz);
-
-
+  // ── CAMERA — follows boat, far isometric view ──
+  const tx=boatGroup.position.x+CAM_D;
+  const ty=CAM_D*0.6;
+  const tz=boatGroup.position.z+CAM_D;
+  camera.position.x+=(tx-camera.position.x)*5*dt;
+  camera.position.y+=(ty-camera.position.y)*3*dt;
+  camera.position.z+=(tz-camera.position.z)*5*dt;
+  camera.lookAt(boatGroup.position.x,boatGroup.position.y*0.3,boatGroup.position.z);
 
   // HUD
-
-  const lat=(63+boatGroup.position.z*.002).toFixed(3);
-
-  const lon=(17+boatGroup.position.x*.003).toFixed(3);
-
-  document.getElementById('coord').textContent=`${lat}°N · ${lon}°W`;
-
-  const spdPct=Math.abs(boatSpeed)/maxSpd*100;
-
-  document.getElementById('sf').style.width=spdPct+'%';
-
-
+  document.getElementById('coord').textContent=
+    `${(63+boatGroup.position.z*.0012).toFixed(3)}°N · ${(17+boatGroup.position.x*.0018).toFixed(3)}°W`;
+  document.getElementById('sf').style.width=(Math.abs(boatSpeed)/MAX*100)+'%';
 
   renderer.render(scene,camera);
-
 }
 
-
-
-// ---
-
-// INPUT
-
-// ---
-
+// ── INPUT ──
 window.addEventListener('keydown',e=>{
-
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A')keys.left=true;
-
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;
-
-  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W')keys.up=true;
-
-  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S')keys.down=true;
-
+  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){K.l=true;e.preventDefault();}
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){K.r=true;e.preventDefault();}
+  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W'){K.u=true;e.preventDefault();}
+  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S'){K.d=true;e.preventDefault();}
 });
-
 window.addEventListener('keyup',e=>{
-
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A')keys.left=false;
-
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false;
-
-  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W')keys.up=false;
-
-  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S')keys.down=false;
-
+  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A')K.l=false;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')K.r=false;
+  if(e.key==='ArrowUp'   ||e.key==='w'||e.key==='W')K.u=false;
+  if(e.key==='ArrowDown' ||e.key==='s'||e.key==='S')K.d=false;
 });
-
-
-
 ['ml','mr','mu','md'].forEach(id=>{
-
   const el=document.getElementById(id);
-
-  const k=id[1]==='l'?'left':id[1]==='r'?'right':id[1]==='u'?'up':'down';
-
-  el.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});
-
-  el.addEventListener('touchend',  e=>{e.preventDefault();keys[k]=false},{passive:false});
-
-  el.addEventListener('mousedown', ()=>keys[k]=true);
-
-  el.addEventListener('mouseup',   ()=>keys[k]=false);
-
+  const k=id[1]==='l'?'l':id[1]==='r'?'r':id[1]==='u'?'u':'d';
+  el.addEventListener('touchstart',e=>{e.preventDefault();K[k]=true},{passive:false});
+  el.addEventListener('touchend',  e=>{e.preventDefault();K[k]=false},{passive:false});
+  el.addEventListener('mousedown',()=>K[k]=true);
+  el.addEventListener('mouseup',  ()=>K[k]=false);
+  el.addEventListener('mouseleave',()=>K[k]=false);
 });
-
-
 
 function onResize(){
-
-  const a=window.innerWidth/window.innerHeight;
-
-  const d=100;
-
-  camera.left=-d*a;camera.right=d*a;
-
-  camera.top=d;camera.bottom=-d;
-
+  const a=innerWidth/innerHeight;
+  camera.left=-CAM_D*a;camera.right=CAM_D*a;
+  camera.top=CAM_D;camera.bottom=-CAM_D;
   camera.updateProjectionMatrix();
-
-  renderer.setSize(window.innerWidth,window.innerHeight);
-
+  renderer.setSize(innerWidth,innerHeight);
 }
-
-
-
-// ---
-
-// START
-
-// ---
 
 function startGame(){
-
   document.getElementById('ls').classList.add('out');
-
   document.getElementById('hud').classList.add('on');
-
   document.getElementById('speedbar').classList.add('on');
-
   document.getElementById('ctrl').classList.add('on');
-
-  if(window.innerWidth<=700){
-
+  if(innerWidth<=700){
     document.getElementById('mctrl').style.display='flex';
-
     document.getElementById('ctrl').style.display='none';
-
   }
-
-  setTimeout(()=>{gameRunning=true;loop();},600);
-
+  setTimeout(()=>{running=true;clock.start();loop();},600);
 }
 
-
-
-initThree();
-
+init();
 renderer.render(scene,camera);
-
 </script>
-
 </body>
-
 </html>
