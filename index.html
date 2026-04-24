@@ -275,7 +275,7 @@ canvas#c{display:block;width:100vw;height:100vh}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ---
-// LOADING SCREEN
+// 
 // ---
 // Relâmpagos decorativos
 const sb = document.getElementById('stormBg');
@@ -309,6 +309,16 @@ function advance(){
   pt.textContent=s.t;
   if(s.p===100){setTimeout(()=>{pb.style.display='block'},500);}
   else setTimeout(advance,400+Math.random()*500);
+}
+setTimeout(advance,200);
+
+  function advance(){
+  if(si>=steps.length)return;
+  const s=steps[si++];
+  pf.style.width=s.p+'%';
+  pt.textContent=s.t;
+  if(s.p===100){setTimeout(()=>{pb.style.display='block'},500);}
+  else setTimeout(advance,300+Math.random()*400);
 }
 setTimeout(advance,200);
 
@@ -505,6 +515,18 @@ function loop(){
 
   renderer.render(scene, camera);
 }
+
+  function startGame() {
+    document.getElementById('ls').classList.add('out');
+    document.getElementById('hud').classList.add('on');
+    document.getElementById('speedbar').classList.add('on');
+    document.getElementById('ctrl').classList.add('on');
+    gameRunning = true;
+    update(); // Inicia o loop
+}
+
+// Inicializa o motor silenciosamente antes do play
+init();
 </script>
 </body>
 </html>
