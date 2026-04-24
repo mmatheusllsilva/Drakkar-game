@@ -20,7 +20,6 @@ canvas#c{display:block;width:100vw;height:100vh}
 }
 #ls.out{opacity:0;visibility:hidden;pointer-events:none}
 
-/* Relâmpagos de fundo */
 .storm-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .bolt{
   position:absolute;top:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(200,220,255,0.6),transparent);
@@ -33,7 +32,6 @@ canvas#c{display:block;width:100vw;height:100vh}
   55%{opacity:0;height:50vh}
 }
 
-/* Barco SVG na loading */
 .ship-wrap{position:relative;margin-bottom:1.5rem;filter:drop-shadow(0 0 20px rgba(180,200,255,0.4))}
 .ship-svg{width:clamp(160px,22vw,260px);animation:shipRock 4s ease-in-out infinite}
 @keyframes shipRock{
@@ -104,7 +102,6 @@ canvas#c{display:block;width:100vw;height:100vh}
 .hud-coord{font-size:.55rem;letter-spacing:.25em;color:rgba(180,200,255,.4)}
 .hud-right{text-align:right;font-size:.55rem;letter-spacing:.2em;color:rgba(255,255,255,.2);line-height:2}
 
-/* speed bar */
 #speedbar{
   position:fixed;bottom:80px;right:32px;
   display:flex;flex-direction:column;align-items:flex-end;gap:5px;
@@ -115,7 +112,6 @@ canvas#c{display:block;width:100vw;height:100vh}
 .spd-track{width:90px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
 .spd-fill{height:100%;width:0%;background:linear-gradient(90deg,#334,#aac);transition:width .15s linear}
 
-/* ── CONTROLS ── */
 #ctrl{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
   display:flex;gap:18px;align-items:center;
@@ -130,7 +126,6 @@ canvas#c{display:block;width:100vw;height:100vh}
 }
 .key-l{font-size:.47rem;letter-spacing:.2em;color:rgba(255,255,255,.18)}
 
-/* mobile */
 #mctrl{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
   display:none;gap:14px;align-items:center;z-index:10;
@@ -143,90 +138,28 @@ canvas#c{display:block;width:100vw;height:100vh}
   color:rgba(255,255,255,.55);font-size:1.3rem;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;user-select:none;touch-action:manipulation;
-  transition:background .2s,border-color .2s;
-}
-.mbtn:active{background:rgba(180,200,255,.12);border-color:rgba(180,200,255,.5)}
-
-/* vignette */
-.vig{
-  position:fixed;inset:0;pointer-events:none;z-index:5;
-  background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.72) 100%);
 }
 
-/* lightning flash overlay */
+.vig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.72) 100%)}
 #flash{position:fixed;inset:0;background:#c8d8ff;opacity:0;pointer-events:none;z-index:8;transition:opacity .08s}
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="ls">
   <div class="storm-bg" id="stormBg"></div>
-
-  <!-- Drakkar SVG detalhado -->
   <div class="ship-wrap">
     <svg class="ship-svg" viewBox="0 0 300 170" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Ondas embaixo -->
       <path d="M10 140 Q50 130 90 140 Q130 150 170 140 Q210 130 250 140 Q275 145 290 140" stroke="rgba(140,160,200,0.3)" stroke-width="1.5" fill="none"/>
-      <path d="M0 150 Q40 142 80 150 Q120 158 160 150 Q200 142 240 150 Q270 155 300 150" stroke="rgba(140,160,200,0.2)" stroke-width="1" fill="none"/>
-      <!-- Hull principal -->
       <path d="M30 110 Q80 130 150 132 Q220 130 268 110 L255 125 Q200 148 150 150 Q100 148 45 125 Z" fill="rgba(60,50,40,0.9)" stroke="rgba(160,150,130,0.6)" stroke-width="1.5"/>
-      <!-- Ripas do casco -->
-      <path d="M50 118 Q150 134 250 118" stroke="rgba(100,85,65,0.5)" stroke-width="1" fill="none"/>
-      <path d="M60 123 Q150 138 240 123" stroke="rgba(100,85,65,0.4)" stroke-width="1" fill="none"/>
-      <!-- Deck -->
       <rect x="55" y="104" width="190" height="10" rx="2" fill="rgba(80,65,50,0.95)" stroke="rgba(140,120,90,0.5)" stroke-width="1"/>
-      <!-- Cabeça de dragão (proa) -->
       <path d="M255 108 Q278 98 288 86 Q295 80 292 73 Q286 68 280 74 Q284 65 278 60 Q272 65 270 73 Q265 82 260 92 Q257 99 255 108Z" fill="rgba(90,70,45,0.95)" stroke="rgba(160,130,90,0.7)" stroke-width="1.2"/>
-      <!-- Olho do dragão -->
       <circle cx="282" cy="73" r="2.5" fill="rgba(255,80,30,0.8)"/>
-      <!-- Dentes do dragão -->
-      <path d="M285 82 L288 87 L291 82" stroke="rgba(200,180,150,0.7)" stroke-width="1" fill="none"/>
-      <!-- Cauda (popa) -->
-      <path d="M44 108 Q28 95 22 80 Q18 68 26 62 Q34 68 32 78 Q38 90 44 108Z" fill="rgba(90,70,45,0.95)" stroke="rgba(160,130,90,0.7)" stroke-width="1"/>
-      <!-- Espiral na cauda -->
-      <path d="M28 78 Q32 72 36 78 Q32 84 28 78" stroke="rgba(160,130,90,0.5)" stroke-width="1" fill="none"/>
-      <!-- Mastro -->
       <line x1="150" y1="18" x2="150" y2="108" stroke="rgba(100,80,55,0.9)" stroke-width="3"/>
-      <!-- Travessa horizontal -->
-      <line x1="108" y1="36" x2="192" y2="36" stroke="rgba(100,80,55,0.8)" stroke-width="2"/>
-      <!-- Corda de tensão -->
-      <line x1="150" y1="18" x2="268" y2="108" stroke="rgba(120,100,70,0.4)" stroke-width="1"/>
-      <line x1="150" y1="18" x2="32" y2="108" stroke="rgba(120,100,70,0.4)" stroke-width="1"/>
-      <!-- Vela principal -->
       <path d="M110 38 Q150 50 190 38 L188 94 Q150 104 112 94 Z" fill="rgba(120,25,25,0.85)" stroke="rgba(160,60,60,0.6)" stroke-width="1"/>
-      <!-- Listras da vela -->
-      <path d="M121 40 L119 93" stroke="rgba(80,15,15,0.6)" stroke-width="3"/>
-      <path d="M136 44 L134 98" stroke="rgba(80,15,15,0.5)" stroke-width="2"/>
-      <path d="M164 44 L166 98" stroke="rgba(80,15,15,0.5)" stroke-width="2"/>
-      <path d="M179 40 L181 93" stroke="rgba(80,15,15,0.6)" stroke-width="3"/>
-      <!-- Runa na vela -->
       <text x="147" y="74" font-size="20" fill="rgba(220,180,100,0.7)" text-anchor="middle" font-family="serif">ᚠ</text>
-      <!-- Escudos lado esquerdo -->
-      <circle cx="80" cy="108" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-      <circle cx="110" cy="110" r="9" fill="rgba(40,40,80,0.8)" stroke="rgba(80,80,140,0.6)" stroke-width="1.2"/>
-      <circle cx="140" cy="110" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-      <circle cx="170" cy="110" r="9" fill="rgba(40,40,80,0.8)" stroke="rgba(80,80,140,0.6)" stroke-width="1.2"/>
-      <circle cx="200" cy="110" r="9" fill="rgba(140,25,25,0.8)" stroke="rgba(180,60,60,0.6)" stroke-width="1.2"/>
-      <!-- Centro dos escudos -->
-      <circle cx="80" cy="108" r="3" fill="rgba(200,170,100,0.7)"/>
-      <circle cx="110" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-      <circle cx="140" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-      <circle cx="170" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-      <circle cx="200" cy="110" r="3" fill="rgba(200,170,100,0.7)"/>
-      <!-- Remos -->
-      <line x1="80" y1="116" x2="65" y2="138" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-      <line x1="110" y1="118" x2="97" y2="140" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-      <line x1="170" y1="118" x2="181" y2="140" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-      <line x1="200" y1="116" x2="213" y2="138" stroke="rgba(100,80,55,0.6)" stroke-width="2"/>
-      <!-- Pá dos remos -->
-      <ellipse cx="63" cy="140" rx="5" ry="3" transform="rotate(-30 63 140)" fill="rgba(100,80,55,0.6)"/>
-      <ellipse cx="95" cy="142" rx="5" ry="3" transform="rotate(-20 95 142)" fill="rgba(100,80,55,0.6)"/>
-      <ellipse cx="183" cy="142" rx="5" ry="3" transform="rotate(20 183 142)" fill="rgba(100,80,55,0.6)"/>
-      <ellipse cx="215" cy="140" rx="5" ry="3" transform="rotate(30 215 140)" fill="rgba(100,80,55,0.6)"/>
     </svg>
   </div>
-
   <div class="ls-title">DRAKKAR</div>
   <div class="ls-sub">Mar do Norte · Matheus Lopes</div>
   <div class="prog-wrap"><div class="prog-fill" id="pf"></div></div>
@@ -235,14 +168,12 @@ canvas#c{display:block;width:100vw;height:100vh}
   <div class="ls-hint">← → ↑ ↓ &nbsp;|&nbsp; WASD PARA NAVEGAR</div>
 </div>
 
-<!-- CANVAS -->
 <canvas id="c"></canvas>
 <div class="vig"></div>
 <div id="flash"></div>
 
-<!-- HUD -->
 <div id="hud">
-  <div class="hud-back"><a href="https://portifolio-matheus-murex.vercel.app" target="_blank">← PORTFÓLIO</a></div>
+  <div class="hud-back"><a href="#">← PORTFÓLIO</a></div>
   <div class="hud-mid">
     <div class="hud-name">MATHEUS LOPES</div>
     <div class="hud-coord" id="coord">63°12'N · 17°08'W</div>
@@ -250,283 +181,159 @@ canvas#c{display:block;width:100vw;height:100vh}
   <div class="hud-right">AUTOMAÇÃO · IA · N8N<br><span style="color:rgba(180,200,255,.3)">NAVEGANDO</span></div>
 </div>
 
-<!-- SPEED -->
 <div id="speedbar">
   <div class="spd-label">VELOCIDADE</div>
   <div class="spd-track"><div class="spd-fill" id="sf"></div></div>
 </div>
 
-<!-- CONTROLS -->
 <div id="ctrl">
-  <div class="key"><div class="key-k">←</div><div class="key-l">Esq</div></div>
-  <div class="key"><div class="key-k">↑</div><div class="key-l">Frente</div></div>
-  <div class="key"><div class="key-k">↓</div><div class="key-l">Ré</div></div>
-  <div class="key"><div class="key-k">→</div><div class="key-l">Dir</div></div>
+  <div class="key"><div class="key-k">W</div><div class="key-l">Frente</div></div>
+  <div class="key"><div class="key-k">A</div><div class="key-l">Esq</div></div>
+  <div class="key"><div class="key-k">S</div><div class="key-l">Ré</div></div>
+  <div class="key"><div class="key-k">D</div><div class="key-l">Dir</div></div>
 </div>
 
-<!-- MOBILE -->
 <div id="mctrl">
-  <div class="mbtn" id="ml">←</div>
   <div class="mbtn" id="mu">↑</div>
+  <div class="mbtn" id="ml">←</div>
   <div class="mbtn" id="md">↓</div>
   <div class="mbtn" id="mr">→</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ---
-// 
-// ---
-// Relâmpagos decorativos
+// --- Lógica do Loading ---
 const sb = document.getElementById('stormBg');
 for(let i=0;i<8;i++){
-  const b=document.createElement('div');
-  b.className='bolt';
-  b.style.left=Math.random()*100+'vw';
-  b.style.animationDuration=(3+Math.random()*5)+'s';
-  b.style.animationDelay=(-Math.random()*8)+'s';
-  b.style.opacity=0.4+Math.random()*0.6;
+  const b=document.createElement('div'); b.className='bolt';
+  b.style.left=Math.random()*100+'vw'; b.style.animationDuration=(3+Math.random()*5)+'s';
   sb.appendChild(b);
 }
 
 const steps=[
-  {p:12,t:'INVOCANDO A TEMPESTADE...'},
-  {p:28,t:'CONSTRUINDO O DRAKKAR...'},
-  {p:46,t:'GERANDO AS ONDAS...'},
-  {p:63,t:'FORJANDO OS TROVÕES...'},
-  {p:80,t:'ACORDANDO OS GUERREIROS...'},
-  {p:95,t:'IÇANDO AS VELAS...'},
-  {p:100,t:'QUE ODIN NOS GUIE'},
+  {p:20,t:'INVOCANDO A TEMPESTADE...'},
+  {p:50,t:'CONSTRUINDO O DRAKKAR...'},
+  {p:80,t:'IÇANDO AS VELAS...'},
+  {p:100,t:'QUE ODIN NOS GUIE'}
 ];
 let si=0;
-const pf=document.getElementById('pf');
-const pt=document.getElementById('pt');
-const pb=document.getElementById('play-btn');
 function advance(){
   if(si>=steps.length)return;
   const s=steps[si++];
-  pf.style.width=s.p+'%';
-  pt.textContent=s.t;
-  if(s.p===100){setTimeout(()=>{pb.style.display='block'},500);}
-  else setTimeout(advance,400+Math.random()*500);
+  document.getElementById('pf').style.width=s.p+'%';
+  document.getElementById('pt').textContent=s.t;
+  if(s.p===100) setTimeout(()=>document.getElementById('play-btn').style.display='block', 500);
+  else setTimeout(advance, 600);
 }
-setTimeout(advance,200);
+advance();
 
-  function advance(){
-  if(si>=steps.length)return;
-  const s=steps[si++];
-  pf.style.width=s.p+'%';
-  pt.textContent=s.t;
-  if(s.p===100){setTimeout(()=>{pb.style.display='block'},500);}
-  else setTimeout(advance,300+Math.random()*400);
-}
-setTimeout(advance,200);
+// --- Three.js ---
+let scene, camera, renderer, clock, waterGeo, boatGroup, sailMesh;
+let gameRunning = false;
+let boatSpeed = 0, boatAngle = Math.PI;
+const keys = {up:false, down:false, left:false, right:false};
 
-// ---
-// THREE.JS
-// ---
-let scene,camera,renderer,clock;
-let waterMesh,waterGeo;
-let boatGroup,sailMesh;
-let wakes=[];
-let stormClouds=[];
-let boatSpeed=0, boatAngle=Math.PI;
-let gameRunning=false;
-const keys={left:false,right:false,up:false,down:false};
+function initThree() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050a10);
+    clock = new THREE.Clock();
 
-function initThree(){
-  const canvas=document.getElementById('c');
-  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  renderer.shadowMap.enabled=true;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    const aspect = window.innerWidth / window.innerHeight;
+    camera = new THREE.OrthographicCamera(-35*aspect, 35*aspect, 35, -35, 0.1, 1000);
+    camera.position.set(50, 50, 50);
+    camera.lookAt(0,0,0);
 
-  scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x2a3a4a); // Céu mais escuro
+    renderer = new THREE.WebGLRenderer({canvas: document.getElementById('c'), antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
-  clock=new THREE.Clock();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(10, 20, 10); scene.add(sun);
 
-  const aspect=window.innerWidth/window.innerHeight;
-  const d=30;
-  camera=new THREE.OrthographicCamera(-d*aspect,d*aspect,d,-d,0.1,1000);
-  camera.position.set(50,50,50);
-  camera.lookAt(0,0,0);
-  camera.zoom=1.5;
-  camera.updateProjectionMatrix();
+    waterGeo = new THREE.PlaneGeometry(600, 600, 100, 100);
+    const water = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({color: 0x1a3a5a, roughness: 0.1}));
+    water.rotation.x = -Math.PI/2;
+    scene.add(water);
 
-  buildLights();
-  buildWater();
-  mkBoat();
-  buildClouds();
+    boatGroup = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(15, 2.5, 5), new THREE.MeshStandardMaterial({color: 0x3d1f10}));
+    boatGroup.add(hull);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 12), new THREE.MeshStandardMaterial({color: 0x2a1a0a}));
+    mast.position.y = 5; boatGroup.add(mast);
+    sailMesh = new THREE.Mesh(new THREE.PlaneGeometry(9, 8), new THREE.MeshStandardMaterial({color: 0x8b0000, side: THREE.DoubleSide}));
+    sailMesh.position.set(0, 7, 0.2); boatGroup.add(sailMesh);
 
-  window.addEventListener('resize',onResize);
-}
+    boatGroup.position.y = 1.5;
+    scene.add(boatGroup);
 
-function buildLights(){
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  sunLight.position.set(10, 20, 10);
-  scene.add(sunLight);
-}
+    // Eventos
+    const handleKey = (e, val) => {
+        const k = e.key.toLowerCase();
+        if(k==='w'||k==='arrowup') keys.up = val;
+        if(k==='s'||k==='arrowdown') keys.down = val;
+        if(k==='a'||k==='arrowleft') keys.left = val;
+        if(k==='d'||k==='arrowright') keys.right = val;
+    };
+    window.addEventListener('keydown', e => handleKey(e, true));
+    window.addEventListener('keyup', e => handleKey(e, false));
 
-function buildWater(){
-  waterGeo=new THREE.PlaneGeometry(600,600,120,120);
-  const waterMat=new THREE.MeshStandardMaterial({
-    color:0x1a3a5a,
-    roughness:0.1,
-    metalness:0.5,
-  });
-  waterMesh=new THREE.Mesh(waterGeo,waterMat);
-  waterMesh.rotation.x=-Math.PI/2;
-  scene.add(waterMesh);
+    // Touch Mobile
+    const bindM = (id, k) => {
+        document.getElementById(id).addEventListener('touchstart', (e)=>{ e.preventDefault(); keys[k]=true; });
+        document.getElementById(id).addEventListener('touchend', ()=>{ keys[k]=false; });
+    };
+    bindM('mu','up'); bindM('md','down'); bindM('ml','left'); bindM('mr','right');
 }
 
-function mkBoat(){
-  boatGroup = new THREE.Group();
-  
-  function mat(c,ds){return new THREE.MeshStandardMaterial({color:c,roughness:1,metalness:0,flatShading:true,side:ds?THREE.DoubleSide:THREE.FrontSide});}
-  function add(parent,geo,m,x,y,z){const mesh=new THREE.Mesh(geo,m);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;}
-  
-  const dkBrown= mat(0x3d1f10); // Marrom madeira escura
-  const deepRed= mat(0x8b0000); // Vermelho escuro
-  const sailRed= mat(0xaa2018, true);
-  const eyeM   = new THREE.MeshStandardMaterial({color:0xffcc00,emissive:0xffaa00});
-  
-  // Casco - Mais alto para não inundar
-  const hull = mkHull(dkBrown, 8, 2.5, 1.8, 0.6);
-  boatGroup.add(hull);
-  
-  // Deck
-  add(boatGroup, new THREE.BoxGeometry(15, 0.5, 4), deepRed, 0, 1.8, 0);
-  
-  // Mastro
-  add(boatGroup, new THREE.CylinderGeometry(0.15,0.2,12,6), dkBrown, 0, 6, 0);
+function loop() {
+    if(!gameRunning) return;
+    requestAnimationFrame(loop);
+    const dt = clock.getDelta();
+    const t = clock.getElapsedTime();
 
-  // Vela - Rotacionada para lógica real (perpendicular ao barco)
-  const sail = new THREE.Mesh(new THREE.PlaneGeometry(8, 9), sailRed);
-  sail.position.set(0, 7.5, 0);
-  sail.rotation.y = 0; // Alinhada com a largura do barco
-  boatGroup.add(sail);
-  sailMesh = sail;
-
-  // ── CABEÇA DE DRAGÃO (FRENTE) ──
-  const neck = add(boatGroup, new THREE.BoxGeometry(0.6, 3, 0.6), dkBrown, 7.5, 2.5, 0);
-  neck.rotation.z = -0.4;
-  const head = add(boatGroup, new THREE.BoxGeometry(1.8, 1, 1), dkBrown, 8.5, 4, 0);
-  add(boatGroup, new THREE.BoxGeometry(0.3, 0.3, 0.2), eyeM, 9, 4.2, 0.4); // Olho
-  
-  // ── CAUDA (TRASEIRA) ──
-  const tail = add(boatGroup, new THREE.BoxGeometry(0.6, 2.5, 0.6), dkBrown, -7.5, 2.5, 0);
-  tail.rotation.z = 0.4;
-
-  // Posição Y inicial mais alta (2.2) para evitar que ondas entrem
-  boatGroup.position.set(0, 2.2, 0);
-  scene.add(boatGroup);
-}
-
-function mkHull(mat, lx, bz, th, taper){
-  const geo = new THREE.BufferGeometry();
-  const vertices = new Float32Array([
-    -lx, th,-bz,  lx, th,-bz,  lx, th, bz,  -lx, th, bz,
-    -lx+taper,-th,-bz+taper,  lx-taper,-th,-bz+taper,  lx-taper,-th, bz-taper,  -lx+taper,-th, bz-taper,
-  ]);
-  const indices = [0,2,1, 0,3,2, 4,5,6, 4,6,7, 0,1,5, 0,5,4, 2,3,7, 2,7,6, 0,4,7, 0,7,3, 1,2,6, 1,6,5];
-  geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-  return new THREE.Mesh(geo, mat);
-}
-
-function buildClouds(){
-  // Dobrado a quantidade para mais nevoeiro (32 nuvens)
-  for(let i=0;i<32;i++){
-    const grp=new THREE.Group();
-    const n=4+Math.floor(Math.random()*5);
-    for(let j=0;j<n;j++){
-      const r=8+Math.random()*12;
-      const mat=new THREE.MeshStandardMaterial({
-        color:0x8899aa,
-        transparent:true,
-        opacity:0.4,
-      });
-      const m=new THREE.Mesh(new THREE.SphereGeometry(r,8,6),mat);
-      m.scale.y=0.2;
-      m.position.set((Math.random()-.5)*25, (Math.random()-.5)*5, (Math.random()-.5)*25);
-      grp.add(m);
+    // Ondas
+    const pos = waterGeo.attributes.position;
+    for(let i=0; i<pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i);
+        pos.setZ(i, Math.sin(x*0.1 + t) * 1.2 + Math.cos(y*0.1 + t) * 0.8);
     }
-    grp.position.set((Math.random()-.5)*500, 10+Math.random()*40, (Math.random()-.5)*500);
-    grp.userData={speed:0.2+Math.random()*0.3};
-    scene.add(grp);
-    stormClouds.push({mesh:grp, type:'cloud'});
-  }
+    pos.needsUpdate = true;
+
+    // Movimento
+    if(keys.up) boatSpeed = Math.min(boatSpeed + 12*dt, 20);
+    else if(keys.down) boatSpeed = Math.max(boatSpeed - 15*dt, -5);
+    else boatSpeed *= 0.97;
+
+    if(keys.left) boatAngle += 1.6 * dt;
+    if(keys.right) boatAngle -= 1.6 * dt;
+
+    boatGroup.position.x += Math.sin(boatAngle) * boatSpeed * dt;
+    boatGroup.position.z += Math.cos(boatAngle) * boatSpeed * dt;
+    boatGroup.rotation.y = boatAngle;
+    boatGroup.position.y = 1.5 + Math.sin(t*1.2)*0.3;
+    sailMesh.rotation.y = Math.sin(t)*0.1;
+
+    // UI Speed
+    document.getElementById('sf').style.width = (Math.abs(boatSpeed)/20 * 100) + '%';
+
+    // Camera
+    camera.position.x += (boatGroup.position.x + 50 - camera.position.x) * 0.05;
+    camera.position.z += (boatGroup.position.z + 50 - camera.position.z) * 0.05;
+    camera.lookAt(boatGroup.position);
+
+    renderer.render(scene, camera);
 }
 
-function loop(){
-  if (!gameRunning || !boatGroup) return;
-  requestAnimationFrame(loop);
-  const dt=clock.getDelta();
-  const t=clock.getElapsedTime();
-
-  // Ondas
-  const pos=waterGeo.attributes.position;
-  for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i),y=pos.getY(i);
-    const h=Math.sin(x*.08+t*.9)*1.1+Math.sin(y*.06+t*.7)*0.9;
-    pos.setZ(i,h);
-  }
-  pos.needsUpdate=true;
-
-  // Nuvens
-  stormClouds.forEach(c=>{
-    c.mesh.position.x+=c.mesh.userData.speed;
-    if(c.mesh.position.x>300) c.mesh.position.x=-300;
-  });
-
-  // Movimento
-  const maxSpd=18, acc=10, fric=4.5, turn=1.5;
-  if(keys.up)    boatSpeed=Math.min(boatSpeed+acc*dt,maxSpd);
-  if(keys.down)  boatSpeed=Math.max(boatSpeed-acc*dt*1.6,-maxSpd*.35);
-  if(!keys.up && !keys.down) boatSpeed+=(0-boatSpeed)*fric*dt;
-  
-  if(keys.left)  boatAngle+=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
-  if(keys.right) boatAngle-=turn*dt*(0.3+Math.abs(boatSpeed)/maxSpd*.7);
-
-  const dx=Math.sin(boatAngle)*boatSpeed*dt;
-  const dz=Math.cos(boatAngle)*boatSpeed*dt;
-  boatGroup.position.x+=dx;
-  boatGroup.position.z+=dz;
-
-  // Rotaciona o barco para olhar para onde anda (Ajustado para o Dragão ser a frente)
-  boatGroup.rotation.y = boatAngle;
-
-  // Balanço (Base Y em 2.2 para ficar acima das ondas)
-  boatGroup.position.y = 2.2 + Math.sin(t * 1.1) * 0.28;
-  boatGroup.rotation.z = Math.sin(t*.9)*.03 + (keys.left?.05:keys.right?-.05:0);
-
-  // Vela balançando
-  if(sailMesh) sailMesh.rotation.x = Math.sin(t*1.5)*0.05;
-
-  // Câmera
-  const cx=boatGroup.position.x, cz=boatGroup.position.z;
-  camera.position.x+=(cx+60-camera.position.x)*3*dt;
-  camera.position.z+=(cz+60-camera.position.z)*3*dt;
-  camera.lookAt(cx, 0, cz);
-
-  renderer.render(scene, camera);
-}
-
-  function startGame() {
+function startGame() {
     document.getElementById('ls').classList.add('out');
     document.getElementById('hud').classList.add('on');
     document.getElementById('speedbar').classList.add('on');
     document.getElementById('ctrl').classList.add('on');
     gameRunning = true;
-    update(); // Inicia o loop
+    loop();
 }
 
-// Inicializa o motor silenciosamente antes do play
-init();
+initThree();
 </script>
 </body>
 </html>
